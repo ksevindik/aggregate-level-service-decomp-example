@@ -1,0 +1,20 @@
+package com.example.clubservice.repository;
+
+import com.example.clubservice.model.Player;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface PlayerRepository extends JpaRepository<Player, Long> {
+    List<Player> findByCountry(String country);
+    List<Player> findByNameContaining(String namePattern);
+    List<Player> findByRatingGreaterThanEqual(Integer rating);
+    List<Player> findByRatingLessThanEqual(Integer rating);
+    
+    @Query("SELECT p FROM Player p WHERE p.club.name = :clubName")
+    List<Player> findByClubName(String clubName);
+}

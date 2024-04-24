@@ -33,7 +33,7 @@ public class ReadWriteApiDispatcher {
 
     public List<Club> getAllClubs() {
         return executeCommand(
-                () -> monolithReadWriteApiAdapter.getAllClubs(),
+                () -> clubService.getAllClubs(),
                 () -> clubService.getAllClubs(),
                 () -> monolithReadWriteApiAdapter.getAllClubs(),
                 () -> {});
@@ -49,7 +49,7 @@ public class ReadWriteApiDispatcher {
 
     public Optional<Club> getClubById(Long id) {
         return executeCommand(
-                () -> Optional.ofNullable(monolithReadWriteApiAdapter.getClubById(id)),
+                () -> clubService.getClubById(id),
                 () -> clubService.getClubById(id),
                 () -> Optional.ofNullable(monolithReadWriteApiAdapter.getClubById(id)),
                 () -> {});
@@ -83,7 +83,7 @@ public class ReadWriteApiDispatcher {
 
     public List<Player> getAllPlayers() {
         return executeCommand(
-                () -> monolithReadWriteApiAdapter.getAllPlayers(),
+                () -> playerService.getAllPlayers(),
                 () -> playerService.getAllPlayers(),
                 () -> monolithReadWriteApiAdapter.getAllPlayers(),
                 () -> {});
@@ -91,7 +91,7 @@ public class ReadWriteApiDispatcher {
 
     public List<Player> getPlayersByClubName(String clubName) {
         return executeCommand(
-                () -> monolithReadWriteApiAdapter.getPlayersByClubName(clubName),
+                () -> playerService.getPlayersByClubName(clubName),
                 () -> playerService.getPlayersByClubName(clubName),
                 () -> monolithReadWriteApiAdapter.getPlayersByClubName(clubName),
                 () -> {});
@@ -99,7 +99,7 @@ public class ReadWriteApiDispatcher {
 
     public List<Player> getPlayersByCountry(String country) {
         return executeCommand(
-                () -> monolithReadWriteApiAdapter.getPlayersByCountry(country),
+                () -> playerService.getPlayersByCountry(country),
                 () -> playerService.getPlayersByCountry(country),
                 () -> monolithReadWriteApiAdapter.getPlayersByCountry(country),
                 () -> {});
@@ -107,7 +107,7 @@ public class ReadWriteApiDispatcher {
 
     public Optional<Player> getPlayerById(Long id) {
         return executeCommand(
-                () -> Optional.ofNullable(monolithReadWriteApiAdapter.getPlayerById(id)),
+                () -> playerService.getPlayerById(id),
                 () -> playerService.getPlayerById(id),
                 () -> Optional.ofNullable(monolithReadWriteApiAdapter.getPlayerById(id)),
                 () -> {});
@@ -115,7 +115,7 @@ public class ReadWriteApiDispatcher {
 
     public List<Player> getPlayersByNamePattern(String name) {
         return executeCommand(
-                () -> monolithReadWriteApiAdapter.getPlayersByNamePattern(name),
+                () -> playerService.getPlayersByNamePattern(name),
                 () -> playerService.getPlayersByNamePattern(name),
                 () -> monolithReadWriteApiAdapter.getPlayersByNamePattern(name),
                 () -> {});
@@ -145,33 +145,33 @@ public class ReadWriteApiDispatcher {
                 () -> entityPersister.syncPlayerEntityIfNecessary(playerId));
     }
 
-    private <R> R executeCommand(Supplier<R> readOnlyCommand,
-                                 Supplier<R> readWriteCommand,
-                                 Supplier<R> monolithCommand,
-                                 Runnable syncCommand) {
+    private <R> R executeCommand(Supplier<R> serviceReadOnlyCommand,
+                                 Supplier<R> serviceReadWriteCommand,
+                                 Supplier<R> monolithReadWriteCommand,
+                                 Runnable entityStateSyncCommand) {
         switch (operationModeManager.getOperationMode()) {
             case READ_ONLY:
                 /*
                 read-only means that only read-only operations should be served from the service,
                 all write operations should be forwarded to the monolith
                  */
-                return readOnlyCommand.get();
+                return serviceReadOnlyCommand.get();
             case READ_WRITE:
                 /*
                 read-write means that all read and write operations should be served from the service,
-                before executing the write operation, the entity state should be synced from the monolith
+                before executing the write operation, the entity state should be synced from the monolith if necessary.
                  */
-                syncCommand.run();
-                return readWriteCommand.get();
+                entityStateSyncCommand.run();
+                return serviceReadWriteCommand.get();
             case DRY_RUN:
                 /*
                 dry-run means that all read and write operations should be forwarded to the monolith,
                 meanwhile write operations should be executed on the service as well without causing any
                 external side effects on the other parties.
                  */
-                R result = monolithCommand.get();
+                R result = monolithReadWriteCommand.get();
                 try {
-                    readWriteCommand.get();
+                    serviceReadWriteCommand.get();
                 } catch (Exception e) {
                     //deliberately ignore the exception
                 }

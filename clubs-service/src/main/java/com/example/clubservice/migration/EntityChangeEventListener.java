@@ -35,10 +35,8 @@ public class EntityChangeEventListener {
     public void listen(String message) {
         try {
             EntityChangeEvent event = objectMapper.readValue(message, EntityChangeEvent.class);
-            //we should discard in case the operation mode is read-write or
-            // dry-run but the event is not a create operation
-            if(operationModeManager.isReadWrite() ||
-                    (operationModeManager.isDryRun() && !event.getAction().equals("CREATE"))) return;
+            //we should discard the change event if operation mode is other than read-only.
+            if(!operationModeManager.isReadOnly()) return;
 
             if (targetOrigin.equals(event.getOrigin())) {
                 switch (event.getType()) {

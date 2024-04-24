@@ -1,0 +1,65 @@
+version: "3.8"
+services:
+    h2:
+        image: oscarfonts/h2
+        ports:
+            - "1521:1521"
+            - "81:81"
+        volumes:
+            -   /tmp:/opt/h2-data
+        container_name: h2-database
+        environment:
+            H2_OPTIONS: "-ifNotExists"
+    zookeeper:
+        image: confluentinc/cp-zookeeper:5.5.3
+        ports:
+            - 2181:2181
+        environment:
+            ZOOKEEPER_CLIENT_PORT: 2181
+            ZOOKEEPER_TICK_TIME: 2000
+        container_name: zookeeper
+    kafka:
+        image: confluentinc/cp-kafka:5.5.3
+        depends_on:
+            - zookeeper
+        ports:
+            - 9092:9092
+        container_name: kafka
+        environment:
+            KAFKA_BROKER_ID: 1
+            KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+            KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://kafka:9092
+            KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+            KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+            KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    kafdrop:
+        image: obsidiandynamics/kafdrop
+        depends_on:
+            - kafka
+        restart: "no"
+        ports:
+            - 9001:9000
+        container_name: kafdrop
+        environment:
+            KAFKA_BROKERCONNECT: "kafka:29092"
+            JVM_OPTS: "-Xms16M -Xmx48M -Xss180K -XX:-TieredCompilation -XX:+UseStringDeduplication -noverify"
+    clubs-monolith:
+        build: clubs-monolith
+        ports:
+            - "8080:8080"
+        environment:
+            - SPRING_PROFILES_ACTIVE=docker
+        depends_on:
+            - h2
+            - kafka
+        container_name: clubs-monolith
+    clubs-service:
+        build: clubs-service
+        ports:
+            - "8090:8090"
+        environment:
+            - SPRING_PROFILES_ACTIVE=docker
+        depends_on:
+            - h2
+            - kafka
+        container_name: clubs-service

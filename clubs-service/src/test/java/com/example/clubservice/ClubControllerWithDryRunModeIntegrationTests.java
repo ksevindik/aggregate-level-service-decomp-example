@@ -1,11 +1,9 @@
 package com.example.clubservice;
 
 import com.example.clubservice.migration.OperationMode;
-import com.example.clubservice.migration.OperationModeManager;
 import com.example.clubservice.model.Club;
 import com.example.clubservice.model.IdMapping;
 import com.example.clubservice.repository.ClubRepository;
-import com.example.clubservice.repository.IdMappingRepository;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -13,29 +11,20 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.TestPropertySource;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@AutoConfigureWireMock(port = 0)
-@TestPropertySource(properties = "service.migration.monolith-base-url=http://localhost:${wiremock.server.port}")
+
 public class ClubControllerWithDryRunModeIntegrationTests extends BaseIntegrationTests {
 
     @Autowired
-    private OperationModeManager operationModeManager;
-
-    @Autowired
     private ClubRepository clubRepository;
-
-    @Autowired
-    private IdMappingRepository idMappingRepository;
 
     @BeforeEach
     public void setUp() {

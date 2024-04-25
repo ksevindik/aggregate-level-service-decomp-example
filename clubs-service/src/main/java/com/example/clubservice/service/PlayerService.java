@@ -68,7 +68,7 @@ public class PlayerService {
     @Transactional
     public Player createPlayer(Player player) {
         if(player.getClubId() != null) {
-            Club club = clubRepository.findById(player.getClubId()).orElseThrow(() -> new RuntimeException("Club not found"));
+            Club club = clubRepository.findById(player.getClubId()).orElseThrow(() -> new RuntimeException("Club not found with id :" + player.getClubId()));
             player.setClub(club);
         }
         Player savedPlayer = playerRepository.save(player);

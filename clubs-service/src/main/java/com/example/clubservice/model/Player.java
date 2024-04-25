@@ -2,6 +2,7 @@ package com.example.clubservice.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -9,11 +10,15 @@ import jakarta.persistence.Column;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.sql.Timestamp;
 
 @Entity
 @Table(name = "players")
+@EntityListeners(AuditingEntityListener.class)
 public class Player {
     
     @Id
@@ -29,9 +34,11 @@ public class Player {
     private Integer rating;
     
     @Column(nullable = false)
+    @CreatedDate
     private Timestamp created;
     
     @Column(nullable = false)
+    @LastModifiedDate
     private Timestamp modified;
     
     @ManyToOne

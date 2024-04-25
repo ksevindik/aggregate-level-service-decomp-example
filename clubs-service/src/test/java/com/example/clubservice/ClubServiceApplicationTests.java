@@ -6,7 +6,6 @@ class ClubServiceApplicationTests extends BaseIntegrationTests {
 
 	@Test
 	void contextLoads() {
-		openDBConsole();
 	}
 
 }

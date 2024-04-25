@@ -55,7 +55,7 @@ public class ClubService {
 
     @Transactional
     public Club updatePresident(Long clubId, String president) {
-        Club club = clubRepository.findById(clubId).orElseThrow(() -> new RuntimeException("Club not found"));
+        Club club = clubRepository.findById(clubId).orElseThrow(() -> new RuntimeException("Club not found with id :" + clubId));
         club.setPresident(president);
         Club updatedClub = clubRepository.save(club);
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {

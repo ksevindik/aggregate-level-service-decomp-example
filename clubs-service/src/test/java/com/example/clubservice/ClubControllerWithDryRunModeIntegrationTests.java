@@ -3,10 +3,13 @@ package com.example.clubservice;
 import com.example.clubservice.migration.OperationMode;
 import com.example.clubservice.migration.OperationModeManager;
 import com.example.clubservice.model.Club;
+import com.example.clubservice.model.IdMapping;
 import com.example.clubservice.repository.ClubRepository;
+import com.example.clubservice.repository.IdMappingRepository;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +33,9 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseIntegratio
 
     @Autowired
     private ClubRepository clubRepository;
+
+    @Autowired
+    private IdMappingRepository idMappingRepository;
 
     @BeforeEach
     public void setUp() {
@@ -75,6 +81,12 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseIntegratio
                         .withBody(responseBodyForGetClubById)));
     }
 
+    @AfterEach
+    public void tearDown() {
+        clubRepository.deleteAll();
+        idMappingRepository.deleteAll();
+    }
+
     @Test
     public void testGetAllClubs() {
         ResponseEntity<List<Club>> response = restTemplate.exchange("/clubs",
@@ -111,19 +123,21 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseIntegratio
                         .withHeader("Content-Type","application/json")
                         .withBody("""
                                 {
-                                    "id": 111,
+                                    "id": 123,
                                     "name": "FB",
                                     "country": "TR",
                                     "president": "AK"
                                 }
                                 """)));
         Club savedClub = restTemplate.postForObject("/clubs", club, Club.class);
-        assertEquals(111L, savedClub.getId());
+        assertEquals(123L, savedClub.getId());
         assertEquals("FB", savedClub.getName());
         assertEquals("TR", savedClub.getCountry());
         assertEquals("AK", savedClub.getPresident());
 
-        Club clubFromDB = clubRepository.findAll().get(0);
+        IdMapping idMapping = idMappingRepository.findByMonolithIdAndTypeName(123L, "Club");
+
+        Club clubFromDB = clubRepository.findById(idMapping.getServiceId()).orElseThrow();
         assertEquals("FB", clubFromDB.getName());
         assertEquals("TR", clubFromDB.getCountry());
         assertEquals("AK", clubFromDB.getPresident());
@@ -132,13 +146,15 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseIntegratio
     @Test
     public void testUpdatePresident() {
         Club club = new Club();
-        club.setId(456L);
         club.setName("FB");
         club.setCountry("TR");
         club.setPresident("AK");
-        clubRepository.save(club);
+        club = clubRepository.save(club);
+
+        idMappingRepository.save(new IdMapping(club.getId(), 123L, "Club"));
 
         WireMock.stubFor(WireMock.put("/clubs/123/president")
+                        .withRequestBody(WireMock.equalTo("AY"))
                 .willReturn(WireMock.aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type","application/json")
@@ -151,7 +167,8 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseIntegratio
                                 }
                                 """)));
         restTemplate.put("/clubs/123/president", "AY");
-        Club clubFromDB = clubRepository.findAll().get(0);
+
+        Club clubFromDB = clubRepository.findById(club.getId()).orElseThrow();
         assertEquals("FB", clubFromDB.getName());
         assertEquals("TR", clubFromDB.getCountry());
         assertEquals("AY", clubFromDB.getPresident());

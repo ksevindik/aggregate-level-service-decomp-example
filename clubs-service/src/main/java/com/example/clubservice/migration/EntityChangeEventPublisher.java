@@ -55,6 +55,7 @@ public class EntityChangeEventPublisher {
             String entityState = objectMapper.writeValueAsString(entity);
             EntityChangeEvent event = new EntityChangeEvent(action, entity.getClass().getSimpleName(), sourceOrigin, entityState);
             String message = objectMapper.writeValueAsString(event);
+            System.out.println(">>>Publishing entity change event: " + message);
             kafkaTemplate.send("entity-change-topic", key.toString(), message).get();
         } catch (Exception e) {
             // Handle error, could log or throw a custom unchecked exception

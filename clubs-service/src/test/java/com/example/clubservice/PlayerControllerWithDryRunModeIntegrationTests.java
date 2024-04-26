@@ -4,15 +4,11 @@ import com.example.clubservice.migration.OperationMode;
 import com.example.clubservice.model.Club;
 import com.example.clubservice.model.IdMapping;
 import com.example.clubservice.model.Player;
-import com.example.clubservice.repository.ClubRepository;
-import com.example.clubservice.repository.PlayerRepository;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
@@ -22,16 +18,16 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class PlayerControllerWithDryRunModeIntegrationTests extends BaseIntegrationTests {
-    @Autowired
-    private ClubRepository clubRepository;
 
-    @Autowired
-    private PlayerRepository playerRepository;
+public class PlayerControllerWithDryRunModeIntegrationTests extends BaseIntegrationTests {
+
+    @Override
+    protected OperationMode getOperationMode() {
+        return OperationMode.DRY_RUN;
+    }
 
     @BeforeEach
     public void setUp() {
-        operationModeManager.setOperationMode(OperationMode.DRY_RUN);
         String responseBodyForGetAllPlayers = """
                 [
                     {
@@ -107,13 +103,6 @@ public class PlayerControllerWithDryRunModeIntegrationTests extends BaseIntegrat
                 .willReturn(WireMock.aResponse().withStatus(200)
                         .withHeader("Content-Type","application/json")
                         .withBody(responseBodyForGetPlayersByNamePattern)));
-    }
-
-    @AfterEach
-    public void tearDown() {
-        idMappingRepository.deleteAll();
-        playerRepository.deleteAll();
-        clubRepository.deleteAll();
     }
 
     @Test
@@ -192,6 +181,7 @@ public class PlayerControllerWithDryRunModeIntegrationTests extends BaseIntegrat
                                 """)));
 
         Player savedPlayer = restTemplate.postForObject("/players", player, Player.class);
+
         assertEquals(123L, savedPlayer.getId());
         assertEquals("SGS", savedPlayer.getName());
         assertEquals("TR", savedPlayer.getCountry());

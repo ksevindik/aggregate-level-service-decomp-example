@@ -2,39 +2,33 @@ package com.example.clubservice;
 
 import com.example.clubservice.migration.MigrationProperties;
 import com.example.clubservice.migration.OperationMode;
-import com.example.clubservice.repository.ClubRepository;
-import com.example.clubservice.repository.PlayerRepository;
 import jakarta.persistence.EntityManagerFactory;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.jdbc.support.JdbcTransactionManager;
 import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.jdbc.SqlConfig;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.web.client.RestTemplate;
 
 import javax.sql.DataSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@TestPropertySource(properties = "spring.datasource.url=${service.migration.source-db-url}")
+//@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class MigrationControllerIntegrationTests extends BaseIntegrationTests {
 
-    @Autowired
-    private ClubRepository clubRepository;
-
-    @Autowired
-    private PlayerRepository playerRepository;
+    @Override
+    protected OperationMode getOperationMode() {
+        return OperationMode.READ_ONLY;
+    }
 
     @TestConfiguration
     static class TestConfig {

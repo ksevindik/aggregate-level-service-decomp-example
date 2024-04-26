@@ -2,13 +2,13 @@ package com.example.clubservice;
 
 import com.example.clubservice.migration.OperationMode;
 import com.example.clubservice.model.Club;
-import com.example.clubservice.model.IdMapping;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 
@@ -17,55 +17,32 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+public class ClubControllerWithReadOnlyModeIntegrationTests extends BaseIntegrationTests {
 
-public class ClubControllerWithDryRunModeIntegrationTests extends BaseIntegrationTests {
+    private Club club1,club2, club3;
 
     @Override
     protected OperationMode getOperationMode() {
-        return OperationMode.DRY_RUN;
+        return OperationMode.READ_ONLY;
     }
 
     @BeforeEach
     public void setUp() {
-        String responseBodyForGetAllClubs = """
-                [
-                    {
-                        "id": 123
-                    },
-                    {
-                        "id": 456
-                    },
-                    {
-                        "id": 789
-                    }
-                ]
-                """;
-        String responseBodyForGetClubsByCountry = """
-                [
-                    {
-                        "id": 123
-                    }
-                ]
-                """;
-        String responseBodyForGetClubById = """
-                {
-                    "id": 123
-                }
-                """;
-        WireMock.stubFor(WireMock.get("/clubs")
-                .willReturn(WireMock.aResponse().withStatus(200)
-                        .withHeader("Content-Type","application/json")
-                        .withBody(responseBodyForGetAllClubs)));
-
-        WireMock.stubFor(WireMock.get("/clubs/country/TR")
-                .willReturn(WireMock.aResponse().withStatus(200)
-                        .withHeader("Content-Type","application/json")
-                        .withBody(responseBodyForGetClubsByCountry)));
-
-        WireMock.stubFor(WireMock.get("/clubs/123")
-                .willReturn(WireMock.aResponse().withStatus(200)
-                        .withHeader("Content-Type","application/json")
-                        .withBody(responseBodyForGetClubById)));
+        club1 = new Club();
+        club1.setName("GS");
+        club1.setCountry("TR");
+        club1.setPresident("FT");
+        club1 = clubRepository.save(club1);
+        club2 = new Club();
+        club2.setName("BJK");
+        club2.setCountry("TR");
+        club2.setPresident("FU");
+        club2 = clubRepository.save(club2);
+        club3 = new Club();
+        club3.setName("RM");
+        club3.setCountry("ES");
+        club3.setPresident("FP");
+        club3 = clubRepository.save(club3);
     }
 
     @Test
@@ -75,22 +52,22 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseIntegratio
         assertEquals(200, response.getStatusCodeValue());
         assertEquals(3, response.getBody().size());
         MatcherAssert.assertThat(response.getBody().stream().map(c->c.getId()).collect(Collectors.toList()),
-                Matchers.containsInAnyOrder(123L, 456L, 789L));
+                Matchers.containsInAnyOrder(club1.getId(), club2.getId(), club3.getId()));
     }
 
     @Test
     public void testGetClubsByCountry() {
-        ResponseEntity<List<Club>> response = restTemplate.exchange("/clubs/country/TR",
+        ResponseEntity<List<Club>> response = restTemplate.exchange("/clubs/country/ES",
                 HttpMethod.GET, null, new ParameterizedTypeReference<List<Club>>() {});
         assertEquals(200, response.getStatusCodeValue());
         assertEquals(1, response.getBody().size());
-        assertEquals(123L, response.getBody().get(0).getId());
+        assertEquals(club3.getId(), response.getBody().get(0).getId());
     }
 
     @Test
     public void testGetClubById() {
-        Club club = restTemplate.getForObject("/clubs/123", Club.class);
-        assertEquals(123L, club.getId());
+        Club club = restTemplate.getForObject("/clubs/" + club1.getId(), Club.class);
+        assertEquals(club1.getId(), club.getId());
     }
 
     @Test
@@ -111,31 +88,17 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseIntegratio
                                 }
                                 """)));
         Club savedClub = restTemplate.postForObject("/clubs", club, Club.class);
+
         assertEquals(123L, savedClub.getId());
         assertEquals("FB", savedClub.getName());
         assertEquals("TR", savedClub.getCountry());
         assertEquals("AK", savedClub.getPresident());
-
-        IdMapping idMapping = idMappingRepository.findByMonolithIdAndTypeName(123L, "Club");
-
-        Club clubFromDB = clubRepository.findById(idMapping.getServiceId()).orElseThrow();
-        assertEquals("FB", clubFromDB.getName());
-        assertEquals("TR", clubFromDB.getCountry());
-        assertEquals("AK", clubFromDB.getPresident());
     }
 
     @Test
     public void testUpdatePresident() {
-        Club club = new Club();
-        club.setName("FB");
-        club.setCountry("TR");
-        club.setPresident("AK");
-        club = clubRepository.save(club);
-
-        idMappingRepository.save(new IdMapping(club.getId(), 123L, "Club"));
-
         WireMock.stubFor(WireMock.put("/clubs/123/president")
-                        .withRequestBody(WireMock.equalTo("AY"))
+                .withRequestBody(WireMock.equalTo("AY"))
                 .willReturn(WireMock.aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type","application/json")
@@ -147,11 +110,11 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseIntegratio
                                     "president": "AY"
                                 }
                                 """)));
-        restTemplate.put("/clubs/123/president", "AY");
-
-        Club clubFromDB = clubRepository.findById(club.getId()).orElseThrow();
-        assertEquals("FB", clubFromDB.getName());
-        assertEquals("TR", clubFromDB.getCountry());
-        assertEquals("AY", clubFromDB.getPresident());
+        Club updatedClub = restTemplate.exchange("/clubs/123/president",
+                HttpMethod.PUT, new HttpEntity<String>("AY"), Club.class).getBody();
+        assertEquals(123L, updatedClub.getId());
+        assertEquals("FB", updatedClub.getName());
+        assertEquals("TR", updatedClub.getCountry());
+        assertEquals("AY", updatedClub.getPresident());
     }
 }

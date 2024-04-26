@@ -97,8 +97,8 @@ public class PlayerService {
 
     @Transactional
     public Player transferPlayer(Long playerId, Long clubId) {
-        Player player = playerRepository.findById(playerId).orElseThrow(() -> new RuntimeException("Player not found"));
-        Club club = clubRepository.findById(clubId).orElseThrow(() -> new RuntimeException("Club not found"));
+        Player player = playerRepository.findById(playerId).orElseThrow(() -> new RuntimeException("Player not found with id :" + playerId));
+        Club club = clubRepository.findById(clubId).orElseThrow(() -> new RuntimeException("Club not found with id :" + clubId));
         player.setClub(club);
         Player updatedPlayer = playerRepository.save(player);
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {

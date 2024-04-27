@@ -14,6 +14,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.sql.Timestamp;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
@@ -46,6 +47,15 @@ public class Club {
     private Set<Player> players;
 
     private boolean synced;
+
+    public Club() {
+    }
+
+    public Club(String name, String country, String president) {
+        this.name = name;
+        this.country = country;
+        this.president = president;
+    }
     
     // Getters and Setters
     public Long getId() {
@@ -110,5 +120,29 @@ public class Club {
 
     public void setSynced(boolean synced) {
         this.synced = synced;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Club club = (Club) o;
+        return Objects.equals(name, club.name) && Objects.equals(country, club.country) && Objects.equals(president, club.president);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, country, president);
+    }
+
+    @Override
+    public String toString() {
+        return "Club{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", country='" + country + '\'' +
+                ", president='" + president + '\'' +
+                ", synced=" + synced +
+                '}';
     }
 }

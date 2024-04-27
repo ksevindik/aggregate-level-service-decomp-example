@@ -1,18 +1,24 @@
 package com.example.clubservice;
 
+import com.example.clubservice.migration.EntityChangeEvent;
 import com.example.clubservice.migration.OperationMode;
 import com.example.clubservice.model.Club;
 import com.example.clubservice.model.IdMapping;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.annotation.KafkaListener;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,21 +34,9 @@ public class ClubControllerWithReadWriteModeIntegrationTests extends BaseIntegra
 
     @BeforeEach
     public void setUp() {
-        club1 = new Club();
-        club1.setName("GS");
-        club1.setCountry("TR");
-        club1.setPresident("FT");
-        club1 = clubRepository.save(club1);
-        club2 = new Club();
-        club2.setName("BJK");
-        club2.setCountry("TR");
-        club2.setPresident("FU");
-        club2 = clubRepository.save(club2);
-        club3 = new Club();
-        club3.setName("RM");
-        club3.setCountry("ES");
-        club3.setPresident("FP");
-        club3 = clubRepository.save(club3);
+        club1 = clubRepository.save(new Club("GS", "TR", "FT"));
+        club2 = clubRepository.save(new Club("BJK", "TR", "FU"));
+        club3 = clubRepository.save(new Club("RM", "ES", "FP"));
     }
 
     @Test
@@ -71,32 +65,26 @@ public class ClubControllerWithReadWriteModeIntegrationTests extends BaseIntegra
     }
 
     @Test
-    public void testCreateClub() {
-        Club club = new Club();
-        club.setName("FB");
-        club.setCountry("TR");
-        club.setPresident("AK");
+    public void testCreateClub() throws InterruptedException {
+        Club club = new Club("FB", "TR", "AK");
 
         Club savedClub = restTemplate.postForObject("/clubs", club, Club.class);
         Club clubFromDB = clubRepository.findById(savedClub.getId()).orElseThrow();
 
-        assertEquals(clubFromDB.getId(), savedClub.getId());
+        verifyClub(club, savedClub.getId(), savedClub);
+        verifyClub(clubFromDB, clubFromDB.getId(), savedClub);
 
-        assertEquals("FB", savedClub.getName());
-        assertEquals("TR", savedClub.getCountry());
-        assertEquals("AK", savedClub.getPresident());
-
-
-        assertEquals("FB", clubFromDB.getName());
-        assertEquals("TR", clubFromDB.getCountry());
-        assertEquals("AK", clubFromDB.getPresident());
+        waitForKafka();
+        verifyEntityChangeEventForClub(clubFromDB, "CREATE");
     }
+
+
 
     @Test
     public void testUpdatePresident() {
         idMappingRepository.save(new IdMapping(club1.getId(), 123L, "Club"));
 
-        String responseBodyForGetClubById = """
+        trainWireMock("/clubs/123","GET",null,200,"""
                 {
                     "id": 123,
                     "name": "GS",
@@ -105,19 +93,14 @@ public class ClubControllerWithReadWriteModeIntegrationTests extends BaseIntegra
                     "created": "2021-07-01T00:00:00",
                     "modified": "2021-07-01T00:00:00"
                 }
-                """;
-
-        WireMock.stubFor(WireMock.get("/clubs/123")
-                .willReturn(WireMock.aResponse().withStatus(200)
-                        .withHeader("Content-Type","application/json")
-                        .withBody(responseBodyForGetClubById)));
+                """);
 
 
         restTemplate.put("/clubs/"+ club1.getId() + "/president", "AY");
 
         Club clubFromDB = clubRepository.findById(club1.getId()).orElseThrow();
-        assertEquals("GS", clubFromDB.getName());
-        assertEquals("TRY", clubFromDB.getCountry());
-        assertEquals("AY", clubFromDB.getPresident());
+        verifyClub(new Club("GS", "TRY", "AY"), club1.getId(), clubFromDB);
+        waitForKafka();
+        verifyEntityChangeEventForClub(clubFromDB, "UPDATE");
     }
 }

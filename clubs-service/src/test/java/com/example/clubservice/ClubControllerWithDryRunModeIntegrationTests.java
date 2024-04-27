@@ -25,9 +25,9 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseIntegratio
         return OperationMode.DRY_RUN;
     }
 
-    @BeforeEach
-    public void setUp() {
-        String responseBodyForGetAllClubs = """
+    @Test
+    public void testGetAllClubs() {
+        trainWireMock("/clubs", "GET", null, 200, """
                 [
                     {
                         "id": 123
@@ -39,37 +39,7 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseIntegratio
                         "id": 789
                     }
                 ]
-                """;
-        String responseBodyForGetClubsByCountry = """
-                [
-                    {
-                        "id": 123
-                    }
-                ]
-                """;
-        String responseBodyForGetClubById = """
-                {
-                    "id": 123
-                }
-                """;
-        WireMock.stubFor(WireMock.get("/clubs")
-                .willReturn(WireMock.aResponse().withStatus(200)
-                        .withHeader("Content-Type","application/json")
-                        .withBody(responseBodyForGetAllClubs)));
-
-        WireMock.stubFor(WireMock.get("/clubs/country/TR")
-                .willReturn(WireMock.aResponse().withStatus(200)
-                        .withHeader("Content-Type","application/json")
-                        .withBody(responseBodyForGetClubsByCountry)));
-
-        WireMock.stubFor(WireMock.get("/clubs/123")
-                .willReturn(WireMock.aResponse().withStatus(200)
-                        .withHeader("Content-Type","application/json")
-                        .withBody(responseBodyForGetClubById)));
-    }
-
-    @Test
-    public void testGetAllClubs() {
+                """);
         ResponseEntity<List<Club>> response = restTemplate.exchange("/clubs",
                 HttpMethod.GET, null, new ParameterizedTypeReference<List<Club>>() {});
         assertEquals(200, response.getStatusCodeValue());
@@ -80,6 +50,13 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseIntegratio
 
     @Test
     public void testGetClubsByCountry() {
+        trainWireMock("/clubs/country/TR", "GET", null, 200, """
+                [
+                    {
+                        "id": 123
+                    }
+                ]
+                """);
         ResponseEntity<List<Club>> response = restTemplate.exchange("/clubs/country/TR",
                 HttpMethod.GET, null, new ParameterizedTypeReference<List<Club>>() {});
         assertEquals(200, response.getStatusCodeValue());
@@ -89,69 +66,59 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseIntegratio
 
     @Test
     public void testGetClubById() {
+        trainWireMock("/clubs/123", "GET", null, 200, """
+                {
+                    "id": 123
+                }
+                """);
         Club club = restTemplate.getForObject("/clubs/123", Club.class);
         assertEquals(123L, club.getId());
     }
 
     @Test
     public void testCreateClub() {
-        Club club = new Club();
-        club.setName("FB");
-        club.setCountry("TR");
-        club.setPresident("AK");
-        WireMock.stubFor(WireMock.post("/clubs")
-                .willReturn(WireMock.aResponse().withStatus(201)
-                        .withHeader("Content-Type","application/json")
-                        .withBody("""
-                                {
-                                    "id": 123,
-                                    "name": "FB",
-                                    "country": "TR",
-                                    "president": "AK"
-                                }
-                                """)));
+        Club club = new Club("FB", "TR", "AK");
+        trainWireMock("/clubs", "POST", """
+                {
+                    "name": "FB",
+                    "country": "TR",
+                    "president": "AK"
+                }
+                """, 201, """
+                {
+                    "id": 123,
+                    "name": "FB",
+                    "country": "TR",
+                    "president": "AK"
+                }
+                """);
         Club savedClub = restTemplate.postForObject("/clubs", club, Club.class);
-        assertEquals(123L, savedClub.getId());
-        assertEquals("FB", savedClub.getName());
-        assertEquals("TR", savedClub.getCountry());
-        assertEquals("AK", savedClub.getPresident());
+        verifyClub(club, 123L, savedClub);
 
         IdMapping idMapping = idMappingRepository.findByMonolithIdAndTypeName(123L, "Club");
 
         Club clubFromDB = clubRepository.findById(idMapping.getServiceId()).orElseThrow();
-        assertEquals("FB", clubFromDB.getName());
-        assertEquals("TR", clubFromDB.getCountry());
-        assertEquals("AK", clubFromDB.getPresident());
+        verifyClub(club, idMapping.getServiceId(), clubFromDB);
     }
 
     @Test
     public void testUpdatePresident() {
-        Club club = new Club();
-        club.setName("FB");
-        club.setCountry("TR");
-        club.setPresident("AK");
+        Club club = new Club("FB", "TR", "AK");
         club = clubRepository.save(club);
 
         idMappingRepository.save(new IdMapping(club.getId(), 123L, "Club"));
 
-        WireMock.stubFor(WireMock.put("/clubs/123/president")
-                        .withRequestBody(WireMock.equalTo("AY"))
-                .willReturn(WireMock.aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type","application/json")
-                        .withBody("""
-                                {
-                                    "id": 123,
-                                    "name": "FB",
-                                    "country": "TR",
-                                    "president": "AY"
-                                }
-                                """)));
+        trainWireMock("/clubs/123/president", "PUT", "AY", 200, """
+                {
+                    "id": 123,
+                    "name": "FB",
+                    "country": "TR",
+                    "president": "AK"
+                }
+                """);
         restTemplate.put("/clubs/123/president", "AY");
 
         Club clubFromDB = clubRepository.findById(club.getId()).orElseThrow();
-        assertEquals("FB", clubFromDB.getName());
-        assertEquals("TR", clubFromDB.getCountry());
-        assertEquals("AY", clubFromDB.getPresident());
+        verifyClub(new Club("FB", "TR", "AY"), club.getId(), clubFromDB);
     }
 }

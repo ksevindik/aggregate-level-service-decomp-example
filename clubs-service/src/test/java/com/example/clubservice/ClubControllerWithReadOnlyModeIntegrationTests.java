@@ -28,21 +28,9 @@ public class ClubControllerWithReadOnlyModeIntegrationTests extends BaseIntegrat
 
     @BeforeEach
     public void setUp() {
-        club1 = new Club();
-        club1.setName("GS");
-        club1.setCountry("TR");
-        club1.setPresident("FT");
-        club1 = clubRepository.save(club1);
-        club2 = new Club();
-        club2.setName("BJK");
-        club2.setCountry("TR");
-        club2.setPresident("FU");
-        club2 = clubRepository.save(club2);
-        club3 = new Club();
-        club3.setName("RM");
-        club3.setCountry("ES");
-        club3.setPresident("FP");
-        club3 = clubRepository.save(club3);
+        club1 = clubRepository.save(new Club("GS", "TR", "FT"));
+        club2 = clubRepository.save(new Club("BJK", "TR", "FU"));
+        club3 = clubRepository.save(new Club("RM", "ES", "FP"));
     }
 
     @Test
@@ -72,49 +60,38 @@ public class ClubControllerWithReadOnlyModeIntegrationTests extends BaseIntegrat
 
     @Test
     public void testCreateClub() {
-        Club club = new Club();
-        club.setName("FB");
-        club.setCountry("TR");
-        club.setPresident("AK");
-        WireMock.stubFor(WireMock.post("/clubs")
-                .willReturn(WireMock.aResponse().withStatus(201)
-                        .withHeader("Content-Type","application/json")
-                        .withBody("""
-                                {
-                                    "id": 123,
-                                    "name": "FB",
-                                    "country": "TR",
-                                    "president": "AK"
-                                }
-                                """)));
-        Club savedClub = restTemplate.postForObject("/clubs", club, Club.class);
+        Club club = new Club("FB", "TR", "AK");
 
-        assertEquals(123L, savedClub.getId());
-        assertEquals("FB", savedClub.getName());
-        assertEquals("TR", savedClub.getCountry());
-        assertEquals("AK", savedClub.getPresident());
+        trainWireMock("/clubs", "POST", """
+                {
+                    "name": "FB",
+                    "country": "TR",
+                    "president": "AK"
+                }
+                """, 201, """
+                {
+                    "id": 123,
+                    "name": "FB",
+                    "country": "TR",
+                    "president": "AK"
+                }
+                """);
+        Club savedClub = restTemplate.postForObject("/clubs", club, Club.class);
+        verifyClub(club, 123L, savedClub);
     }
 
     @Test
     public void testUpdatePresident() {
-        WireMock.stubFor(WireMock.put("/clubs/123/president")
-                .withRequestBody(WireMock.equalTo("AY"))
-                .willReturn(WireMock.aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type","application/json")
-                        .withBody("""
-                                {
-                                    "id": 123,
-                                    "name": "FB",
-                                    "country": "TR",
-                                    "president": "AY"
-                                }
-                                """)));
+        trainWireMock("/clubs/123/president", "PUT", "AY", 200, """
+                {
+                    "id": 123,
+                    "name": "FB",
+                    "country": "TR",
+                    "president": "AY"
+                }
+                """);
         Club updatedClub = restTemplate.exchange("/clubs/123/president",
                 HttpMethod.PUT, new HttpEntity<String>("AY"), Club.class).getBody();
-        assertEquals(123L, updatedClub.getId());
-        assertEquals("FB", updatedClub.getName());
-        assertEquals("TR", updatedClub.getCountry());
-        assertEquals("AY", updatedClub.getPresident());
+        verifyClub(new Club("FB", "TR", "AY"), 123L, updatedClub);
     }
 }

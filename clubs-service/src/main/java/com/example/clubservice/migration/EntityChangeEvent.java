@@ -44,4 +44,14 @@ public class EntityChangeEvent {
     public void setEntity(String entity) {
         this.entity = entity;
     }
+
+    @Override
+    public String toString() {
+        return "EntityChangeEvent{" +
+                "action='" + action + '\'' +
+                ", type='" + type + '\'' +
+                ", origin='" + origin + '\'' +
+                ", entity='" + entity + '\'' +
+                '}';
+    }
 }

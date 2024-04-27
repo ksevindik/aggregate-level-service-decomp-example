@@ -65,6 +65,11 @@
 			<artifactId>spring-cloud-contract-wiremock</artifactId>
 			<version>4.1.2</version>
 		</dependency>
+		<dependency>
+			<groupId>org.openjdk.jol</groupId>
+			<artifactId>jol-core</artifactId>
+			<version>0.17</version>
+		</dependency>
 	</dependencies>
 
 	<build>

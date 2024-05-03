@@ -5,10 +5,12 @@ import com.example.clubservice.model.Club;
 import com.example.clubservice.model.IdMapping;
 import com.example.clubservice.model.Player;
 import com.github.tomakehurst.wiremock.client.WireMock;
+import jakarta.persistence.EntityManager;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
@@ -18,6 +20,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 
 public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseIntegrationTests {
@@ -32,45 +35,13 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseIntegr
 
     @BeforeEach
     public void setUp() {
-        club1 = new Club();
-        club1.setName("GS");
-        club1.setCountry("TR");
-        club1.setPresident("FT");
-        club1 = clubRepository.save(club1);
+        club1 = clubRepository.save(new Club("GS", "TR", "FT"));
+        club2 = clubRepository.save(new Club("BJK", "TR", "FU"));
 
-        club2 = new Club();
-        club2.setName("BJK");
-        club2.setCountry("TR");
-        club2.setPresident("FU");
-        club2 = clubRepository.save(club2);
-
-        player1 = new Player();
-        player1.setName("SGS");
-        player1.setRating(100);
-        player1.setCountry("TR");
-        player1.setClub(club1);
-        player1 = playerRepository.save(player1);
-
-        player2 = new Player();
-        player2.setName("SYS");
-        player2.setRating(90);
-        player2.setCountry("TR");
-        player2.setClub(club1);
-        player2 = playerRepository.save(player2);
-
-        player3 = new Player();
-        player3.setName("HS");
-        player3.setRating(80);
-        player3.setCountry("US");
-        player3.setClub(club2);
-        player3 = playerRepository.save(player3);
-
-        player4 = new Player();
-        player4.setName("KS");
-        player4.setRating(70);
-        player4.setCountry("DE");
-        player4.setClub(null);
-        player4 = playerRepository.save(player4);
+        player1 = playerRepository.save(new Player("SGS", "TR", 100, club1));
+        player2 = playerRepository.save(new Player("SYS", "TR", 90, club1));
+        player3 = playerRepository.save(new Player("HS", "US", 80, club2));
+        player4 = playerRepository.save(new Player("KS", "DE", 70, null));
     }
 
 
@@ -123,92 +94,103 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseIntegr
 
     @Test
     public void testCreatePlayer() {
-        Player player = new Player();
-        player.setName("BS");
-        player.setCountry("TR");
-        player.setRating(100);
-        player.setClubId(club2.getId());
+        Player player = new Player("BS", "TR", 100, new Club(456L));
 
-        idMappingRepository.save(new IdMapping(club2.getId(), 456L, "Club"));
+        createIdMappings(new IdMapping(club2.getId(), 456L, "Club"));
 
-        WireMock.stubFor(WireMock.post("/players")
-                .willReturn(WireMock.aResponse().withStatus(201)
-                        .withHeader("Content-Type","application/json")
-                        .withBody("""
-                                {
-                                    "id": 123,
-                                    "name": "BS",
-                                    "country": "TR",
-                                    "rating": 100,
-                                    "clubId": 456
-                                }
-                                """)));
+        trainWireMock("/players", "POST", """
+                {
+                    "name": "BS",
+                    "country": "TR",
+                    "rating": 100,
+                    "clubId": 456
+                }""",201,
+                """
+                {
+                    "id": 123,
+                    "name": "BS",
+                    "country": "TR",
+                    "rating": 100,
+                    "clubId": 456
+                }""");
 
-        Player savedPlayer = restTemplate.postForObject("/players", player, Player.class);
-        assertEquals(123L, savedPlayer.getId());
-        assertEquals("BS", savedPlayer.getName());
-        assertEquals("TR", savedPlayer.getCountry());
-        assertEquals(100, savedPlayer.getRating());
-        assertEquals(456L, savedPlayer.getClubId());
+        IdMapping idMapping = idMappingRepository.findByMonolithIdAndTypeName(123L, "Player");
+        assertNull(idMapping);
+
+        Player savedPlayer = restTemplate.postForObject("/players", player,Player.class);
+
+        waitForEntityPersistedEvent();
+
+        verifyPlayer(new Player(123L, "BS", "TR", 100, new Club(456L)), savedPlayer);
+        idMapping = idMappingRepository.findByMonolithIdAndTypeName(123L, "Player");
+        verifyPlayer(new Player(idMapping.getServiceId(), "BS", "TR", 100, new Club(club2.getId())),
+                playerRepository.findById(idMapping.getServiceId()).get());
+
     }
 
     @Test
     public void testUpdateRating() {
-        idMappingRepository.save(new IdMapping(club1.getId(), 456L, "Club"));
-        idMappingRepository.save(new IdMapping(player1.getId(), 789L, "Player"));
+        createIdMappings(
+                new IdMapping(club1.getId(), 456L, "Club"),
+                new IdMapping(player1.getId(), 789L, "Player"));
 
-        WireMock.stubFor(WireMock.put("/players/" + player1.getId() + "/rating").withRequestBody(WireMock.equalTo("200"))
-                .willReturn(WireMock.aResponse().withStatus(200)
-                        .withHeader("Content-Type","application/json")
-                        .withBody("""
-                                {
-                                    "id": 789,
-                                    "name": "SGS",
-                                    "country": "TR",
-                                    "rating": 200,
-                                    "clubId": 456
-                                }
-                                """)));
+        trainWireMock("/players/789/rating", "PUT", "200",200,
+                """
+                {
+                    "id": 789,
+                    "name": "SGS",
+                    "country": "TR",
+                    "rating": 200,
+                    "clubId": 456,
+                    "created": "2021-07-01T00:00:00",
+                    "modified": "2021-07-01T00:00:00"
+                }""" );
+
+        verifyPlayer(new Player(player1.getId(), "SGS", "TR", 100, new Club(club1.getId())),
+                playerRepository.findById(player1.getId()).get());
 
         Player updatedPlayer = restTemplate.exchange(
-                "/players/" + player1.getId() +"/rating",
+                "/players/789/rating",
                 HttpMethod.PUT, new HttpEntity<Integer>(200),Player.class).getBody();
 
+        waitForEntityPersistedEvent();
 
-        assertEquals("SGS", updatedPlayer.getName());
-        assertEquals("TR", updatedPlayer.getCountry());
-        assertEquals(200, updatedPlayer.getRating());
-        assertEquals(club1.getId(), updatedPlayer.getClubId());
+        verifyPlayer(new Player(789L, "SGS", "TR", 200, new Club(456L)), updatedPlayer);
+        verifyPlayer(new Player(player1.getId(), "SGS", "TR", 200, new Club(club1.getId())),
+                playerRepository.findById(player1.getId()).get());
     }
 
     @Test
     public void testTransferPlayer() {
-        idMappingRepository.save(new IdMapping(club1.getId(), 456L, "Club"));
-        idMappingRepository.save(new IdMapping(club2.getId(), 123L, "Club"));
-        idMappingRepository.save(new IdMapping(player1.getId(), 789L, "Player"));
+        createIdMappings(
+                new IdMapping(club1.getId(), 456L, "Club"),
+                new IdMapping(club2.getId(), 123L, "Club"),
+                new IdMapping(player1.getId(), 789L, "Player"));
 
-        WireMock.stubFor(WireMock.put("/players/" + player1.getId() + "/transfer")
-                .withRequestBody(WireMock.equalTo(club2.getId().toString()))
-                .willReturn(WireMock.aResponse().withStatus(200)
-                        .withHeader("Content-Type","application/json")
-                        .withBody("""
-                                {
-                                    "id": 789,
-                                    "name": "SGS",
-                                    "country": "TR",
-                                    "rating": 100,
-                                    "clubId": 123
-                                }
-                                """)));
+        trainWireMock("/players/789/transfer", "PUT", "123",200,
+                """
+                {
+                    "id": 789,
+                    "name": "SGS",
+                    "country": "TR",
+                    "rating": 100,
+                    "clubId": 123,
+                    "created": "2021-07-01T00:00:00",
+                    "modified": "2021-07-01T00:00:00"
+                }""");
 
+        verifyPlayer(new Player(player1.getId(), "SGS", "TR", 100, new Club(club1.getId())),
+                playerRepository.findById(player1.getId()).get());
 
-        restTemplate.put("/players/" + player1.getId() + "/transfer", club2.getId());
-        Player playerFromDB = playerRepository.findById(player1.getId()).orElseThrow();
+        Player updatedPlayer = restTemplate.exchange(
+                "/players/789/transfer",
+                HttpMethod.PUT, new HttpEntity<Long>(123L),Player.class).getBody();
 
-        assertEquals("SGS", playerFromDB.getName());
-        assertEquals("TR", playerFromDB.getCountry());
-        assertEquals(100, playerFromDB.getRating());
-        assertEquals(club2.getId(), playerFromDB.getClubId());
+        waitForEntityPersistedEvent();
+
+        verifyPlayer(new Player(789L, "SGS", "TR", 100, new Club(123L)), updatedPlayer);
+        verifyPlayer(new Player(player1.getId(), "SGS", "TR", 100, new Club(club2.getId())),
+                playerRepository.findById(player1.getId()).get());
     }
 
 }

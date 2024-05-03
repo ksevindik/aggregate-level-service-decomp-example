@@ -31,45 +31,13 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseInteg
 
     @BeforeEach
     public void setUp() {
-        club1 = new Club();
-        club1.setName("GS");
-        club1.setCountry("TR");
-        club1.setPresident("FT");
-        club1 = clubRepository.save(club1);
+        club1 = clubRepository.save(new Club("GS", "TR", "FT"));
+        club2 = clubRepository.save(new Club("BJK", "TR", "FU"));
 
-        club2 = new Club();
-        club2.setName("BJK");
-        club2.setCountry("TR");
-        club2.setPresident("FU");
-        club2 = clubRepository.save(club2);
-
-        player1 = new Player();
-        player1.setName("SGS");
-        player1.setRating(100);
-        player1.setCountry("TR");
-        player1.setClub(club1);
-        player1 = playerRepository.save(player1);
-
-        player2 = new Player();
-        player2.setName("SYS");
-        player2.setRating(90);
-        player2.setCountry("TR");
-        player2.setClub(club1);
-        player2 = playerRepository.save(player2);
-
-        player3 = new Player();
-        player3.setName("HS");
-        player3.setRating(80);
-        player3.setCountry("US");
-        player3.setClub(club2);
-        player3 = playerRepository.save(player3);
-
-        player4 = new Player();
-        player4.setName("KS");
-        player4.setRating(70);
-        player4.setCountry("DE");
-        player4.setClub(null);
-        player4 = playerRepository.save(player4);
+        player1 = playerRepository.save(new Player("SGS", "TR", 100, club1));
+        player2 = playerRepository.save(new Player("SYS", "TR", 90, club1));
+        player3 = playerRepository.save(new Player("HS", "US", 80, club2));
+        player4 = playerRepository.save(new Player("KS", "DE", 70, null));
     }
 
 
@@ -122,11 +90,7 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseInteg
 
     @Test
     public void testCreatePlayer() {
-        Player player = new Player();
-        player.setName("BS");
-        player.setCountry("TR");
-        player.setRating(100);
-        player.setClubId(club2.getId());
+        Player player = new Player("BS", "TR", 100, club2);
 
         Player savedPlayer = restTemplate.postForObject("/players", player, Player.class);
         Player playerFromDB = playerRepository.findById(savedPlayer.getId()).orElseThrow();

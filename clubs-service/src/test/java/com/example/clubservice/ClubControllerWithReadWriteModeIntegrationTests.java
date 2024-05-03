@@ -1,24 +1,17 @@
 package com.example.clubservice;
 
-import com.example.clubservice.migration.EntityChangeEvent;
 import com.example.clubservice.migration.OperationMode;
 import com.example.clubservice.model.Club;
 import com.example.clubservice.model.IdMapping;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.tomakehurst.wiremock.client.WireMock;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.kafka.annotation.KafkaListener;
 
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -74,8 +67,8 @@ public class ClubControllerWithReadWriteModeIntegrationTests extends BaseIntegra
         verifyClub(club, savedClub.getId(), savedClub);
         verifyClub(clubFromDB, clubFromDB.getId(), savedClub);
 
-        waitForKafka();
-        verifyEntityChangeEventForClub(clubFromDB, "CREATE");
+        waitForEntityChangeEventPublish();
+        verifyEntityChangeEvent(clubFromDB, "CREATE");
     }
 
 
@@ -100,7 +93,7 @@ public class ClubControllerWithReadWriteModeIntegrationTests extends BaseIntegra
 
         Club clubFromDB = clubRepository.findById(club1.getId()).orElseThrow();
         verifyClub(new Club("GS", "TRY", "AY"), club1.getId(), clubFromDB);
-        waitForKafka();
-        verifyEntityChangeEventForClub(clubFromDB, "UPDATE");
+        waitForEntityChangeEventPublish();
+        verifyEntityChangeEvent(clubFromDB, "UPDATE");
     }
 }

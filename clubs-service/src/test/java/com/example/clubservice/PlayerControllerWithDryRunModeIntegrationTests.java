@@ -153,18 +153,11 @@ public class PlayerControllerWithDryRunModeIntegrationTests extends BaseIntegrat
 
     @Test
     public void testCreatePlayer() {
-        Club club = new Club();
-        club.setName("FB");
-        club.setCountry("TR");
-        club.setPresident("AK");
-        club = clubRepository.save(club);
+        Club club = clubRepository.save(new Club("FB", "TR", "AK"));
 
         idMappingRepository.save(new IdMapping(club.getId(), 456L, "Club"));
 
-        Player player = new Player();
-        player.setName("SGS");
-        player.setCountry("TR");
-        player.setRating(100);
+        Player player = new Player("SGS", "TR", 100, null);
         player.setClubId(456L);
 
         WireMock.stubFor(WireMock.post("/players")
@@ -199,21 +192,10 @@ public class PlayerControllerWithDryRunModeIntegrationTests extends BaseIntegrat
 
     @Test
     public void testUpdateRating() {
-        Club club = new Club();
-        club.setName("FB");
-        club.setCountry("TR");
-        club.setPresident("AK");
-        club = clubRepository.save(club);
+        Club club = clubRepository.save(new Club("FB", "TR", "AK"));
+        Player player = playerRepository.save(new Player("SGS", "TR", 100, club));
 
         idMappingRepository.save(new IdMapping(club.getId(), 456L, "Club"));
-
-        Player player = new Player();
-        player.setName("SGS");
-        player.setCountry("TR");
-        player.setRating(100);
-        player.setClub(club);
-        player = playerRepository.save(player);
-
         idMappingRepository.save(new IdMapping(player.getId(), 789L, "Player"));
 
         WireMock.stubFor(WireMock.put("/players/789/rating").withRequestBody(WireMock.equalTo("200"))
@@ -240,28 +222,12 @@ public class PlayerControllerWithDryRunModeIntegrationTests extends BaseIntegrat
 
     @Test
     public void testTransferPlayer() {
-        Club club1 = new Club();
-        club1.setName("FB");
-        club1.setCountry("TR");
-        club1.setPresident("AK");
-        club1 = clubRepository.save(club1);
-
-        Club club2 = new Club();
-        club2.setName("GS");
-        club2.setCountry("TR");
-        club2.setPresident("AY");
-        club2 = clubRepository.save(club2);
+        Club club1 = clubRepository.save(new Club("FB", "TR", "AK"));
+        Club club2 = clubRepository.save(new Club("GS", "TR", "AY"));
+        Player player = playerRepository.save(new Player("SGS", "TR", 100, club1));
 
         idMappingRepository.save(new IdMapping(club1.getId(), 456L, "Club"));
         idMappingRepository.save(new IdMapping(club2.getId(), 789L, "Club"));
-
-        Player player = new Player();
-        player.setName("SGS");
-        player.setCountry("TR");
-        player.setRating(100);
-        player.setClub(club1);
-        player = playerRepository.save(player);
-
         idMappingRepository.save(new IdMapping(player.getId(), 123L, "Player"));
 
         WireMock.stubFor(WireMock.put("/players/123/transfer").withRequestBody(WireMock.equalTo("789"))

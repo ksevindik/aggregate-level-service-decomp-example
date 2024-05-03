@@ -7,6 +7,7 @@ import com.example.clubservice.repository.ClubRepository;
 import com.example.clubservice.repository.IdMappingRepository;
 import com.example.clubservice.repository.PlayerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,11 +26,15 @@ public class EntityPersister {
     @Autowired
     private MonolithReadWriteApiAdapter monolithReadWriteApiAdapter;
 
+    @Autowired
+    private ApplicationEventPublisher applicationEventPublisher;
+
     public Club createFrom(Club monolithClub) {
         Club serviceClub = new Club();
         applyChanges(monolithClub, serviceClub);
         serviceClub = clubRepository.save(serviceClub);
         idMappingRepository.save(new IdMapping(serviceClub.getId(), monolithClub.getId(),"Club"));
+        applicationEventPublisher.publishEvent(new EntityPersistedEvent(this, serviceClub));
         return serviceClub;
     }
 
@@ -37,11 +42,14 @@ public class EntityPersister {
         Long serviceClubId = resolveServiceClubId(monolithClub.getId());
         Club serviceClub = clubRepository.findById(serviceClubId).orElseThrow();
         applyChanges(monolithClub, serviceClub);
-        return clubRepository.save(serviceClub);
+        serviceClub = clubRepository.save(serviceClub);
+        applicationEventPublisher.publishEvent(new EntityPersistedEvent(this, serviceClub));
+        return serviceClub;
     }
 
     public void deleteFrom(Club monolithClub) {
         Long serviceClubId = resolveServiceClubId(monolithClub.getId());
+        applicationEventPublisher.publishEvent(new EntityPersistedEvent(this, serviceClubId));
         clubRepository.deleteById(serviceClubId);
     }
 
@@ -50,6 +58,7 @@ public class EntityPersister {
         applyChanges(monolithPlayer, servicePlayer);
         servicePlayer = playerRepository.save(servicePlayer);
         idMappingRepository.save(new IdMapping(servicePlayer.getId(), monolithPlayer.getId(),"Player"));
+        applicationEventPublisher.publishEvent(new EntityPersistedEvent(this, servicePlayer));
         return servicePlayer;
     }
 
@@ -57,11 +66,14 @@ public class EntityPersister {
         Long servicePlayerId = resolveServicePlayerId(monolithPlayer.getId());
         Player servicePlayer = playerRepository.findById(servicePlayerId).orElseThrow();
         applyChanges(monolithPlayer, servicePlayer);
-        return playerRepository.save(servicePlayer);
+        servicePlayer = playerRepository.save(servicePlayer);
+        applicationEventPublisher.publishEvent(new EntityPersistedEvent(this, servicePlayer));
+        return servicePlayer;
     }
 
     public void deleteFrom(Player monolithPlayer) {
         Long servicePlayerId = resolveServicePlayerId(monolithPlayer.getId());
+        applicationEventPublisher.publishEvent(new EntityPersistedEvent(this, servicePlayerId));
         playerRepository.deleteById(servicePlayerId);
     }
 

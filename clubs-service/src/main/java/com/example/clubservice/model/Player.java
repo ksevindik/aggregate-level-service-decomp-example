@@ -50,6 +50,22 @@ public class Player {
     private Long clubId;
 
     private boolean synced;
+
+    public Player() {
+
+    }
+
+    public Player(Long id, String name, String country, Integer rating, Club club) {
+        this(name, country, rating, club);
+        this.id = id;
+    }
+
+    public Player(String name, String country, Integer rating, Club club) {
+        this.name = name;
+        this.country = country;
+        this.rating = rating;
+        this.setClub(club);
+    }
     
     // Getters and Setters
     public Long getId() {

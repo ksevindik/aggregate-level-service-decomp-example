@@ -3,10 +3,8 @@ package com.example.clubservice;
 import com.example.clubservice.migration.OperationMode;
 import com.example.clubservice.model.Club;
 import com.example.clubservice.model.IdMapping;
-import com.github.tomakehurst.wiremock.client.WireMock;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
@@ -27,7 +25,7 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseIntegratio
 
     @Test
     public void testGetAllClubs() {
-        trainWireMock("/clubs", "GET", null, 200, """
+        registerMonolithResponse("/clubs", "GET", null, 200, """
                 [
                     {
                         "id": 123
@@ -50,7 +48,7 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseIntegratio
 
     @Test
     public void testGetClubsByCountry() {
-        trainWireMock("/clubs/country/TR", "GET", null, 200, """
+        registerMonolithResponse("/clubs/country/TR", "GET", null, 200, """
                 [
                     {
                         "id": 123
@@ -66,7 +64,7 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseIntegratio
 
     @Test
     public void testGetClubById() {
-        trainWireMock("/clubs/123", "GET", null, 200, """
+        registerMonolithResponse("/clubs/123", "GET", null, 200, """
                 {
                     "id": 123
                 }
@@ -78,7 +76,7 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseIntegratio
     @Test
     public void testCreateClub() {
         Club club = new Club("FB", "TR", "AK");
-        trainWireMock("/clubs", "POST", """
+        registerMonolithResponse("/clubs", "POST", """
                 {
                     "name": "FB",
                     "country": "TR",
@@ -108,7 +106,7 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseIntegratio
 
         idMappingRepository.save(new IdMapping(club.getId(), 123L, "Club"));
 
-        trainWireMock("/clubs/123/president", "PUT", "AY", 200, """
+        registerMonolithResponse("/clubs/123/president", "PUT", "AY", 200, """
                 {
                     "id": 123,
                     "name": "FB",

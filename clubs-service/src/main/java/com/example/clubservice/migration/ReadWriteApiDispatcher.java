@@ -132,7 +132,10 @@ public class ReadWriteApiDispatcher {
     public Player createPlayer(Player player) {
         return executeCommand(
                 () -> monolithReadWriteApiAdapter.createPlayer(player),
-                () -> playerService.createPlayer(player),
+                () -> {
+                    player.setSynced(true);
+                    return playerService.createPlayer(player);
+                },
                 () -> {
                     Player monolithSavedPlayer = monolithReadWriteApiAdapter.createPlayer(player);
                     IdMapping idMapping = idMappingRepository.findByMonolithIdAndTypeName(player.getClubId(), "Club");

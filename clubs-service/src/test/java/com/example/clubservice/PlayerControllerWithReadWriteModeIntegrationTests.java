@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseIntegrationTests {
@@ -38,11 +40,20 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseInteg
         player2 = playerRepository.save(new Player("SYS", "TR", 90, club1));
         player3 = playerRepository.save(new Player("HS", "US", 80, club2));
         player4 = playerRepository.save(new Player("KS", "DE", 70, null));
+
+        createIdMappings(
+                new IdMapping(club1.getId(), 456L, "Club"),
+                new IdMapping(club2.getId(), 123L, "Club"),
+                new IdMapping(player1.getId(), 789L, "Player"));
     }
 
 
     @Test
     public void testGetAllPlayers() {
+        /*
+        there should be no interaction with the monolith side
+        all the result should be retrieved from the service side
+         */
         ResponseEntity<List<Player>> response = restTemplate.exchange("/players",
                 HttpMethod.GET, null, new ParameterizedTypeReference<List<Player>>() {});
         assertEquals(200, response.getStatusCodeValue());
@@ -53,6 +64,10 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseInteg
 
     @Test
     public void testGetPlayersByClubName() {
+        /*
+        there should be no interaction with the monolith side
+        all the result should be retrieved from the service side
+         */
         ResponseEntity<List<Player>> response = restTemplate.exchange("/players/clubName?clubName=GS",
                 HttpMethod.GET, null, new ParameterizedTypeReference<List<Player>>() {});
         assertEquals(200, response.getStatusCodeValue());
@@ -63,6 +78,10 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseInteg
 
     @Test
     public void testGetPlayersByCountry() {
+        /*
+        there should be no interaction with the monolith side
+        all the result should be retrieved from the service side
+         */
         ResponseEntity<List<Player>> response = restTemplate.exchange("/players/country/DE",
                 HttpMethod.GET, null, new ParameterizedTypeReference<List<Player>>() {});
         assertEquals(200, response.getStatusCodeValue());
@@ -73,6 +92,10 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseInteg
 
     @Test
     public void testGetPlayerById() {
+        /*
+        there should be no interaction with the monolith side
+        all the result should be retrieved from the service side
+         */
         ResponseEntity<Player> response = restTemplate.getForEntity("/players/" + player1.getId(), Player.class);
         assertEquals(200, response.getStatusCodeValue());
         assertEquals(player1.getId(), response.getBody().getId());
@@ -80,6 +103,10 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseInteg
 
     @Test
     public void testGetPlayersByNamePattern() {
+        /*
+        there should be no interaction with the monolith side
+        all the result should be retrieved from the service side
+         */
         ResponseEntity<List<Player>> response = restTemplate.exchange("/players/search?name=SGS",
                 HttpMethod.GET, null, new ParameterizedTypeReference<List<Player>>() {});
         assertEquals(200, response.getStatusCodeValue());
@@ -90,30 +117,34 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseInteg
 
     @Test
     public void testCreatePlayer() {
+        /*
+        as there is no existing player on the service side, there will be no sync call to the monolith side
+        first, player creation should only occur at the service side
+        then player change event should be published as a kafka message for the monolith side to consume
+         */
         Player player = new Player("BS", "TR", 100, club2);
 
         Player savedPlayer = restTemplate.postForObject("/players", player, Player.class);
-        Player playerFromDB = playerRepository.findById(savedPlayer.getId()).orElseThrow();
 
-        assertEquals(savedPlayer.getId(), playerFromDB.getId());
+        //after create
+        waitForEntityChangeEvenToBetPublished();
+        verifyEntityChangeEvent(new Player(savedPlayer.getId(),"BS","TR",100, new Club(123L)), "CREATE");
 
-        assertEquals("BS", savedPlayer.getName());
-        assertEquals("TR", savedPlayer.getCountry());
-        assertEquals(100, savedPlayer.getRating());
-        assertEquals(club2.getId(), savedPlayer.getClubId());
-
-        assertEquals("BS", playerFromDB.getName());
-        assertEquals("TR", playerFromDB.getCountry());
-        assertEquals(100, playerFromDB.getRating());
-        assertEquals(club2.getId(), playerFromDB.getClubId());
+        Player playerFromDB = findPlayerById(savedPlayer.getId());
+        verifyPlayer(new Player(savedPlayer.getId(),"BS","TR",100, new Club(club2.getId())), playerFromDB);
+        verifyPlayer(savedPlayer,playerFromDB);
+        assertTrue(playerFromDB.isSynced());
     }
 
     @Test
     public void testUpdateRating() {
-        idMappingRepository.save(new IdMapping(club1.getId(), 456L, "Club"));
-        idMappingRepository.save(new IdMapping(player1.getId(), 789L, "Player"));
+        /*
+        first latest player state should be fetched from the monolith side and reflected to the service side
+        then player rating update should only occur at the service side, there should be no update call to the monolith side
+        finally player change event should be published as a kafka message for the monolith side to consume
+         */
 
-        String responseBodyForGetPlayerById = """
+        registerMonolithResponse("/players/789","GET", null,200, """
                 {
                     "id": 789,
                     "name": "SGS",
@@ -123,28 +154,32 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseInteg
                     "created": "2021-07-01T00:00:00",
                     "modified": "2021-07-01T00:00:00"
                 }
-                """;
-        WireMock.stubFor(WireMock.get("/players/789")
-                .willReturn(WireMock.aResponse().withStatus(200)
-                        .withHeader("Content-Type","application/json")
-                        .withBody(responseBodyForGetPlayerById)));
+                """);
+
+        //before update
+        Player playerFromDB = findPlayerById(player1.getId());
+        verifyPlayer(new Player(player1.getId(), "SGS", "TR", 100, new Club(club1.getId())), playerFromDB);
+        assertFalse(playerFromDB.isSynced());
 
         restTemplate.put("/players/" + player1.getId() +"/rating", 200);
-        Player playerFromDB = playerRepository.findById(player1.getId()).orElseThrow();
 
-        assertEquals("SGS", playerFromDB.getName());
-        assertEquals("GBR", playerFromDB.getCountry());
-        assertEquals(200, playerFromDB.getRating());
-        assertEquals(club1.getId(), playerFromDB.getClubId());
+        //after update
+        waitForEntityChangeEvenToBetPublished();
+        verifyEntityChangeEvent(new Player(789L, "SGS", "GBR", 200, new Club(456L)), "UPDATE");
+
+        playerFromDB = findPlayerById(player1.getId());
+        verifyPlayer(new Player(player1.getId(), "SGS", "GBR", 200, new Club(club1.getId())), playerFromDB);
+        assertTrue(playerFromDB.isSynced());
     }
 
     @Test
     public void testTransferPlayer() {
-        idMappingRepository.save(new IdMapping(club1.getId(), 456L, "Club"));
-        idMappingRepository.save(new IdMapping(club2.getId(), 123L, "Club"));
-        idMappingRepository.save(new IdMapping(player1.getId(), 789L, "Player"));
-
-        String responseBodyForGetPlayerById = """
+        /*
+        first latest player state should be fetched from the monolith side and reflected to the service side
+        then player transfer should only occur at the service side, there should be no update call to the monolith side
+        finally player change event should be published as a kafka message for the monolith side to consume
+         */
+        registerMonolithResponse("/players/789","GET", null,200, """
                 {
                     "id": 789,
                     "name": "SGS",
@@ -154,20 +189,22 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseInteg
                     "created": "2021-07-01T00:00:00",
                     "modified": "2021-07-01T00:00:00"
                 }
-                """;
-        WireMock.stubFor(WireMock.get("/players/789")
-                .willReturn(WireMock.aResponse().withStatus(200)
-                        .withHeader("Content-Type","application/json")
-                        .withBody(responseBodyForGetPlayerById)));
+                """);
 
+        //before update
+        Player playerFromDB = findPlayerById(player1.getId());
+        verifyPlayer(new Player(player1.getId(), "SGS", "TR", 100, new Club(club1.getId())), playerFromDB);
+        assertFalse(playerFromDB.isSynced());
 
         restTemplate.put("/players/" + player1.getId() + "/transfer", club2.getId());
-        Player playerFromDB = playerRepository.findById(player1.getId()).orElseThrow();
 
-        assertEquals("SGS", playerFromDB.getName());
-        assertEquals("GBR", playerFromDB.getCountry());
-        assertEquals(100, playerFromDB.getRating());
-        assertEquals(club2.getId(), playerFromDB.getClubId());
+        //after update
+        waitForEntityChangeEvenToBetPublished();
+        verifyEntityChangeEvent(new Player(789L, "SGS", "GBR", 100, new Club(123L)), "UPDATE");
+
+        playerFromDB = findPlayerById(player1.getId());
+        verifyPlayer(new Player(player1.getId(), "SGS", "GBR", 100, new Club(club2.getId())), playerFromDB);
+        assertTrue(playerFromDB.isSynced());
     }
 
 }

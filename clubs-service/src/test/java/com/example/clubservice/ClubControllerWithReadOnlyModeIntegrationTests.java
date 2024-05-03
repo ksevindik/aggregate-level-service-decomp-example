@@ -2,7 +2,6 @@ package com.example.clubservice;
 
 import com.example.clubservice.migration.OperationMode;
 import com.example.clubservice.model.Club;
-import com.github.tomakehurst.wiremock.client.WireMock;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,7 +61,7 @@ public class ClubControllerWithReadOnlyModeIntegrationTests extends BaseIntegrat
     public void testCreateClub() {
         Club club = new Club("FB", "TR", "AK");
 
-        trainWireMock("/clubs", "POST", """
+        registerMonolithResponse("/clubs", "POST", """
                 {
                     "name": "FB",
                     "country": "TR",
@@ -82,7 +81,7 @@ public class ClubControllerWithReadOnlyModeIntegrationTests extends BaseIntegrat
 
     @Test
     public void testUpdatePresident() {
-        trainWireMock("/clubs/123/president", "PUT", "AY", 200, """
+        registerMonolithResponse("/clubs/123/president", "PUT", "AY", 200, """
                 {
                     "id": 123,
                     "name": "FB",

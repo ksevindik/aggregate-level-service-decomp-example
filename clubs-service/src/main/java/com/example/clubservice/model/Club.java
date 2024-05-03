@@ -60,6 +60,15 @@ public class Club {
         this.country = country;
         this.president = president;
     }
+
+    public Club(Club copy) {
+        this(copy.getName(), copy.getCountry(), copy.getPresident());
+        this.setId(copy.getId());
+        this.setCreated(copy.getCreated());
+        this.setModified(copy.getModified());
+        this.setSynced(copy.isSynced());
+
+    }
     
     // Getters and Setters
     public Long getId() {

@@ -15,6 +15,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.sql.Timestamp;
+import java.util.Objects;
 
 @Entity
 @Table(name = "players")
@@ -65,6 +66,13 @@ public class Player {
         this.country = country;
         this.rating = rating;
         this.setClub(club);
+    }
+
+    public Player(Player copy) {
+        this(copy.getId(), copy.getName(), copy.getCountry(), copy.getRating(), copy.getClub());
+        this.setCreated(copy.getCreated());
+        this.setModified(copy.getModified());
+        this.setSynced(copy.isSynced());
     }
     
     // Getters and Setters
@@ -141,5 +149,29 @@ public class Player {
 
     public void setSynced(boolean synced) {
         this.synced = synced;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Player player = (Player) o;
+        return Objects.equals(id, player.id) && Objects.equals(name, player.name) && Objects.equals(country, player.country) && Objects.equals(rating, player.rating) && Objects.equals(clubId, player.clubId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, country, rating, clubId);
+    }
+
+    @Override
+    public String toString() {
+        return "Player{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", country='" + country + '\'' +
+                ", rating=" + rating +
+                ", clubId=" + clubId +
+                '}';
     }
 }

@@ -26,7 +26,6 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.cloud.contract.wiremock.WireMockConfigurationCustomizer;
-import org.springframework.cloud.contract.wiremock.WireMockSpring;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.datasource.DataSourceUtils;
@@ -112,7 +111,7 @@ public abstract class BaseIntegrationTests {
         latchForEntityPersistedEvents.countDown();
     }
 
-    protected void waitForEntityChangeEventPublish() {
+    protected void waitForEntityChangeEvenToBetPublished() {
         try {
             latchForChangeEventPublishes.await(5, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
@@ -128,13 +127,13 @@ public abstract class BaseIntegrationTests {
         }
     }
 
-    protected void verifyEntityChangeEvent(Club entity, String operation) {
+    protected void verifyEntityChangeEvent(Object entity, String operation) {
         try {
             EntityChangeEvent entityChangeEvent = eventMap.get(operation);
             assertEquals("service", entityChangeEvent.getOrigin());
-            assertEquals("Club", entityChangeEvent.getType());
+            assertEquals(entity.getClass().getSimpleName(), entityChangeEvent.getType());
             assertEquals(operation, entityChangeEvent.getAction());
-            assertEquals(entity, objectMapper.readValue(entityChangeEvent.getEntity(), Club.class));
+            assertEquals(entity, objectMapper.readValue(entityChangeEvent.getEntity(), entity.getClass()));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -155,7 +154,7 @@ public abstract class BaseIntegrationTests {
         assertEquals(expected.getClubId(), actual.getClubId());
     }
 
-    protected void trainWireMock(String url, String method, String requestBody, int status, String responseBody) {
+    protected void registerMonolithResponse(String url, String method, String requestBody, int status, String responseBody) {
         MappingBuilder mappingBuilder = WireMock.request(method, WireMock.urlEqualTo(url));
         if(requestBody != null) {
             if(method.equals("PUT")) {
@@ -168,6 +167,10 @@ public abstract class BaseIntegrationTests {
         WireMock.stubFor(mappingBuilder.willReturn(WireMock.aResponse().withStatus(status)
                         .withHeader("Content-Type","application/json")
                         .withBody(responseBody)));
+    }
+
+    protected Player findPlayerById(Long id) {
+        return playerRepository.findById(id).orElseThrow();
     }
 
     @BeforeEach

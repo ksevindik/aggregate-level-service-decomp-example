@@ -4,13 +4,10 @@ import com.example.clubservice.migration.OperationMode;
 import com.example.clubservice.model.Club;
 import com.example.clubservice.model.IdMapping;
 import com.example.clubservice.model.Player;
-import com.github.tomakehurst.wiremock.client.WireMock;
-import jakarta.persistence.EntityManager;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
@@ -102,7 +99,7 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseIntegr
 
         createIdMappings(new IdMapping(club2.getId(), 456L, "Club"));
 
-        trainWireMock("/players", "POST", """
+        registerMonolithResponse("/players", "POST", """
                 {
                     "name": "BS",
                     "country": "TR",
@@ -138,7 +135,7 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseIntegr
                 new IdMapping(club1.getId(), 456L, "Club"),
                 new IdMapping(player1.getId(), 789L, "Player"));
 
-        trainWireMock("/players/789/rating", "PUT", "200",200,
+        registerMonolithResponse("/players/789/rating", "PUT", "200",200,
                 """
                 {
                     "id": 789,
@@ -171,7 +168,7 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseIntegr
                 new IdMapping(club2.getId(), 123L, "Club"),
                 new IdMapping(player1.getId(), 789L, "Player"));
 
-        trainWireMock("/players/789/transfer", "PUT", "123",200,
+        registerMonolithResponse("/players/789/transfer", "PUT", "123",200,
                 """
                 {
                     "id": 789,

@@ -67,7 +67,7 @@ public class ClubControllerWithReadWriteModeIntegrationTests extends BaseIntegra
         verifyClub(club, savedClub.getId(), savedClub);
         verifyClub(clubFromDB, clubFromDB.getId(), savedClub);
 
-        waitForEntityChangeEventPublish();
+        waitForEntityChangeEvenToBetPublished();
         verifyEntityChangeEvent(clubFromDB, "CREATE");
     }
 
@@ -77,7 +77,7 @@ public class ClubControllerWithReadWriteModeIntegrationTests extends BaseIntegra
     public void testUpdatePresident() {
         idMappingRepository.save(new IdMapping(club1.getId(), 123L, "Club"));
 
-        trainWireMock("/clubs/123","GET",null,200,"""
+        registerMonolithResponse("/clubs/123","GET",null,200,"""
                 {
                     "id": 123,
                     "name": "GS",
@@ -93,7 +93,7 @@ public class ClubControllerWithReadWriteModeIntegrationTests extends BaseIntegra
 
         Club clubFromDB = clubRepository.findById(club1.getId()).orElseThrow();
         verifyClub(new Club("GS", "TRY", "AY"), club1.getId(), clubFromDB);
-        waitForEntityChangeEventPublish();
+        waitForEntityChangeEvenToBetPublished();
         verifyEntityChangeEvent(clubFromDB, "UPDATE");
     }
 }

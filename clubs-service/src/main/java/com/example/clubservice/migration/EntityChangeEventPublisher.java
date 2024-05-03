@@ -27,6 +27,7 @@ public class EntityChangeEventPublisher {
     private String sourceOrigin = "service";
 
     public void publishClubEvent(Club club, String action) {
+        club = new Club(club);
         IdMapping idMapping = idMappingRepository.findByServiceIdAndTypeName(club.getId(), "Club");
         if(idMapping != null) {
             club.setId(idMapping.getMonolithId());
@@ -35,6 +36,7 @@ public class EntityChangeEventPublisher {
     }
 
     public void publishPlayerEvent(Player player, String action) {
+        player = new Player(player);
         IdMapping idMappingForPlayer = idMappingRepository.findByServiceIdAndTypeName(player.getId(), "Player");
         if(idMappingForPlayer != null) {
             player.setId(idMappingForPlayer.getMonolithId());

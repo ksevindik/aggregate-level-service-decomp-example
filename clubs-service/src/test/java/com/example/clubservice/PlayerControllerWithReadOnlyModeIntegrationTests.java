@@ -15,6 +15,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.TestPropertySource;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,6 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 
+@TestPropertySource(properties = {
+        "monolith.entity-change-event-publisher.enabled=true"
+})
 public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseIntegrationTests {
 
     private Club club1, club2;

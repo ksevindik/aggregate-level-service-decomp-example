@@ -48,6 +48,10 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseIntegr
 
     @Test
     public void testGetAllPlayers() {
+        /*
+        there should be no interaction with the monolith side
+        all the result should be retrieved from the service side, however entity ids should be of monolith side
+         */
         ResponseEntity<List<Player>> response = restTemplate.exchange("/players",
                 HttpMethod.GET, null, new ParameterizedTypeReference<List<Player>>() {});
         assertEquals(200, response.getStatusCodeValue());
@@ -58,6 +62,10 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseIntegr
 
     @Test
     public void testGetPlayersByClubName() {
+        /*
+        there should be no interaction with the monolith side
+        all the result should be retrieved from the service side, however entity ids should be of monolith side
+         */
         ResponseEntity<List<Player>> response = restTemplate.exchange("/players/clubName?clubName=GS",
                 HttpMethod.GET, null, new ParameterizedTypeReference<List<Player>>() {});
         assertEquals(200, response.getStatusCodeValue());
@@ -68,6 +76,10 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseIntegr
 
     @Test
     public void testGetPlayersByCountry() {
+        /*
+        there should be no interaction with the monolith side
+        all the result should be retrieved from the service side, however entity ids should be of monolith side
+         */
         ResponseEntity<List<Player>> response = restTemplate.exchange("/players/country/DE",
                 HttpMethod.GET, null, new ParameterizedTypeReference<List<Player>>() {});
         assertEquals(200, response.getStatusCodeValue());
@@ -78,6 +90,10 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseIntegr
 
     @Test
     public void testGetPlayerById() {
+        /*
+        there should be no interaction with the monolith side
+        all the result should be retrieved from the service side, however entity ids should be of monolith side
+         */
         ResponseEntity<Player> response = restTemplate.getForEntity("/players/" + player1.getId(), Player.class);
         assertEquals(200, response.getStatusCodeValue());
         assertEquals(player1.getId(), response.getBody().getId());
@@ -85,6 +101,10 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseIntegr
 
     @Test
     public void testGetPlayersByNamePattern() {
+        /*
+        there should be no interaction with the monolith side
+        all the result should be retrieved from the service side, however entity ids should be of monolith side
+         */
         ResponseEntity<List<Player>> response = restTemplate.exchange("/players/search?name=SGS",
                 HttpMethod.GET, null, new ParameterizedTypeReference<List<Player>>() {});
         assertEquals(200, response.getStatusCodeValue());
@@ -95,6 +115,11 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseIntegr
 
     @Test
     public void testCreatePlayer() {
+        /*
+        new player should be created on the monolith side
+        entity change event published from the monolith side should be consumed and player should be persisted on the service side
+        entity ids should be from the monolith side
+         */
         Player player = new Player("BS", "TR", 100, new Club(456L));
 
         createIdMappings(new IdMapping(club2.getId(), 456L, "Club"));
@@ -131,6 +156,11 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseIntegr
 
     @Test
     public void testUpdateRating() {
+        /*
+        player rating should be updated on the monolith side
+        entity change event published from the monolith side should be consumed and player should be updated on the service side
+        entity ids should be from the monolith side
+         */
         createIdMappings(
                 new IdMapping(club1.getId(), 456L, "Club"),
                 new IdMapping(player1.getId(), 789L, "Player"));
@@ -163,6 +193,11 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseIntegr
 
     @Test
     public void testTransferPlayer() {
+        /*
+        player transfer should occur on the monolith side
+        entity change event published from the monolith side should be consumed and player should be updated on the service side
+        entity ids should be from the monolith side
+         */
         createIdMappings(
                 new IdMapping(club1.getId(), 456L, "Club"),
                 new IdMapping(club2.getId(), 123L, "Club"),

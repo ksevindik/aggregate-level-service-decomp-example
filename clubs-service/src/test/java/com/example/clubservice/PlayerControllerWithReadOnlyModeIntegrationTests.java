@@ -43,6 +43,11 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseIntegr
         player2 = playerRepository.save(new Player("SYS", "TR", 90, club1));
         player3 = playerRepository.save(new Player("HS", "US", 80, club2));
         player4 = playerRepository.save(new Player("KS", "DE", 70, null));
+
+        createIdMappings(
+                new IdMapping(club1.getId(), 456L, "Club"),
+                new IdMapping(club2.getId(), 123L, "Club"),
+                new IdMapping(player1.getId(), 789L, "Player"));
     }
 
 
@@ -122,8 +127,6 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseIntegr
          */
         Player player = new Player("BS", "TR", 100, new Club(456L));
 
-        createIdMappings(new IdMapping(club2.getId(), 456L, "Club"));
-
         registerMonolithResponse("/players", "POST", """
                 {
                     "name": "BS",
@@ -149,7 +152,7 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseIntegr
 
         verifyPlayer(new Player(123L, "BS", "TR", 100, new Club(456L)), savedPlayer);
         idMapping = idMappingRepository.findByMonolithIdAndTypeName(123L, "Player");
-        verifyPlayer(new Player(idMapping.getServiceId(), "BS", "TR", 100, new Club(club2.getId())),
+        verifyPlayer(new Player(idMapping.getServiceId(), "BS", "TR", 100, new Club(club1.getId())),
                 playerRepository.findById(idMapping.getServiceId()).get());
 
     }
@@ -161,9 +164,6 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseIntegr
         entity change event published from the monolith side should be consumed and player should be updated on the service side
         entity ids should be from the monolith side
          */
-        createIdMappings(
-                new IdMapping(club1.getId(), 456L, "Club"),
-                new IdMapping(player1.getId(), 789L, "Player"));
 
         registerMonolithResponse("/players/789/rating", "PUT", "200",200,
                 """
@@ -198,10 +198,6 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseIntegr
         entity change event published from the monolith side should be consumed and player should be updated on the service side
         entity ids should be from the monolith side
          */
-        createIdMappings(
-                new IdMapping(club1.getId(), 456L, "Club"),
-                new IdMapping(club2.getId(), 123L, "Club"),
-                new IdMapping(player1.getId(), 789L, "Player"));
 
         registerMonolithResponse("/players/789/transfer", "PUT", "123",200,
                 """

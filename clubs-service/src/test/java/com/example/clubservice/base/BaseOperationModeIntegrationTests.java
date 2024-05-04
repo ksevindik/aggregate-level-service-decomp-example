@@ -1,9 +1,11 @@
-package com.example.clubservice;
+package com.example.clubservice.base;
 
 import com.example.clubservice.migration.EntityChangeEvent;
 import com.example.clubservice.migration.EntityPersistedEvent;
 import com.example.clubservice.migration.OperationMode;
 import com.example.clubservice.migration.OperationModeManager;
+import com.example.clubservice.utils.EventPublishingWireMockConfigurationCustomizer;
+import com.example.clubservice.utils.MapProxy;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterAll;

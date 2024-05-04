@@ -1,5 +1,6 @@
 package com.example.clubservice;
 
+import com.example.clubservice.base.BaseOperationModeIntegrationTests;
 import com.example.clubservice.migration.OperationMode;
 import com.example.clubservice.model.Club;
 import org.hamcrest.MatcherAssert;

@@ -1,10 +1,10 @@
 package com.example.clubservice;
 
+import com.example.clubservice.base.BaseOperationModeIntegrationTests;
 import com.example.clubservice.migration.OperationMode;
 import com.example.clubservice.model.Club;
 import com.example.clubservice.model.IdMapping;
 import com.example.clubservice.model.Player;
-import com.github.tomakehurst.wiremock.client.WireMock;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;

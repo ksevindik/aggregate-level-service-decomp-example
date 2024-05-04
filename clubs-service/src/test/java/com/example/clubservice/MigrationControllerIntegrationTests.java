@@ -1,5 +1,6 @@
 package com.example.clubservice;
 
+import com.example.clubservice.base.BaseIntegrationTests;
 import com.example.clubservice.migration.MigrationProperties;
 import com.example.clubservice.migration.OperationMode;
 import jakarta.persistence.EntityManagerFactory;

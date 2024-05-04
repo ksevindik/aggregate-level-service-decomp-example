@@ -1,4 +1,4 @@
-package com.example.clubservice;
+package com.example.clubservice.utils;
 
 import org.openjdk.jol.vm.VM;
 

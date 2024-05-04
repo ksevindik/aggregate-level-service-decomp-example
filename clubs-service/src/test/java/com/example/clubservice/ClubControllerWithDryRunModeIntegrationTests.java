@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
-public class ClubControllerWithDryRunModeIntegrationTests extends BaseIntegrationTests {
+public class ClubControllerWithDryRunModeIntegrationTests extends BaseOperationModeIntegrationTests {
 
     @Override
     protected OperationMode getOperationMode() {

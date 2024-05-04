@@ -22,13 +22,7 @@ import javax.sql.DataSource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @TestPropertySource(properties = "spring.datasource.url=${service.migration.source-db-url}")
-//@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class MigrationControllerIntegrationTests extends BaseIntegrationTests {
-
-    @Override
-    protected OperationMode getOperationMode() {
-        return OperationMode.READ_ONLY;
-    }
 
     @TestConfiguration
     static class TestConfig {

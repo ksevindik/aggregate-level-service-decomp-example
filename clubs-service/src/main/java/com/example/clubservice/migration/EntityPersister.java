@@ -40,7 +40,7 @@ public class EntityPersister {
 
     public Club updateFrom(Club monolithClub) {
         Long serviceClubId = resolveServiceClubId(monolithClub.getId());
-        Club serviceClub = clubRepository.findById(serviceClubId).orElseThrow();
+        Club serviceClub = clubRepository.findById(serviceClubId).orElseThrow(()->new RuntimeException("Club not found with id: " + serviceClubId));
         applyChanges(monolithClub, serviceClub);
         serviceClub = clubRepository.save(serviceClub);
         applicationEventPublisher.publishEvent(new EntityPersistedEvent(this, serviceClub));
@@ -64,7 +64,7 @@ public class EntityPersister {
 
     public Player updateFrom(Player monolithPlayer) {
         Long servicePlayerId = resolveServicePlayerId(monolithPlayer.getId());
-        Player servicePlayer = playerRepository.findById(servicePlayerId).orElseThrow();
+        Player servicePlayer = playerRepository.findById(servicePlayerId).orElseThrow(()->new RuntimeException("Player not found with id: " + servicePlayerId));
         applyChanges(monolithPlayer, servicePlayer);
         servicePlayer = playerRepository.save(servicePlayer);
         applicationEventPublisher.publishEvent(new EntityPersistedEvent(this, servicePlayer));

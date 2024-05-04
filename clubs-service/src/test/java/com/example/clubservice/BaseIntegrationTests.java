@@ -52,16 +52,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWireMock(port = 0)
 @TestPropertySource(properties = "service.migration.monolith-base-url=http://localhost:${wiremock.server.port}")
-@Import(BaseIntegrationTests.BaseTestConfig.class)
 public abstract class BaseIntegrationTests {
     @Autowired
     private DataSource dataSource;
 
     @LocalServerPort
     private Long port;
-
-    @Autowired
-    protected OperationModeManager operationModeManager;
 
     @Autowired
     protected IdMappingRepository idMappingRepository;
@@ -80,18 +76,24 @@ public abstract class BaseIntegrationTests {
     @Autowired
     protected ObjectMapper objectMapper;
 
-    @TestConfiguration
-    static class BaseTestConfig {
-        @Bean
-        public WireMockConfigurationCustomizer wireMockConfigurationCustomizer(KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper)  {
-            return new EventPublishingWireMockConfigurationCustomizer(kafkaTemplate, objectMapper);
-        }
+    @BeforeEach
+    public void _setUp() {
+        restTemplate = restTemplateBuilder.rootUri("http://localhost:" + port).build();
     }
 
+    @AfterEach
+    public void _tearDown() {
+        idMappingRepository.deleteAll();
+        playerRepository.deleteAll();
+        clubRepository.deleteAll();
+        WireMock.resetToDefault();
+    }
 
-    private static CountDownLatch latchForChangeEventPublishes = new CountDownLatch(1);
-    private static CountDownLatch latchForEntityPersistedEvents = new CountDownLatch(1);
-    private static Map<String, EntityChangeEvent> eventMap = MapProxy.createProxy(new HashMap<>());
+    @BeforeAll
+    static void _beforeAll() {
+        // Configure WireMock to have a longer shutdown timeout
+        //WireMockSpring.options().jettyStopTimeout(100000L).timeout(100000);
+    }
 
     protected void createIdMappings(IdMapping... idMappings) {
         for(IdMapping idMapping : idMappings) {
@@ -99,44 +101,8 @@ public abstract class BaseIntegrationTests {
         }
     }
 
-    @KafkaListener(topics = "entity-change-topic", groupId = "club-service-tests")
-    public void handle(String message) throws JsonProcessingException {
-        EntityChangeEvent entityChangeEvent = objectMapper.readValue(message, EntityChangeEvent.class);
-        eventMap.put(entityChangeEvent.getAction(), entityChangeEvent);
-        latchForChangeEventPublishes.countDown();
-    }
-
-    @TransactionalEventListener
-    public void handle(EntityPersistedEvent event) {
-        latchForEntityPersistedEvents.countDown();
-    }
-
-    protected void waitForEntityChangeEvenToBetPublished() {
-        try {
-            latchForChangeEventPublishes.await(5, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    protected void waitForEntityPersistedEvent() {
-        try {
-            latchForEntityPersistedEvents.await(5, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    protected void verifyEntityChangeEvent(Object entity, String operation) {
-        try {
-            EntityChangeEvent entityChangeEvent = eventMap.get(operation);
-            assertEquals("service", entityChangeEvent.getOrigin());
-            assertEquals(entity.getClass().getSimpleName(), entityChangeEvent.getType());
-            assertEquals(operation, entityChangeEvent.getAction());
-            assertEquals(entity, objectMapper.readValue(entityChangeEvent.getEntity(), entity.getClass()));
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+    protected Player findPlayerById(Long id) {
+        return playerRepository.findById(id).orElseThrow();
     }
 
     protected void verifyClub(Club expected, Long expectedId, Club actual) {
@@ -169,44 +135,11 @@ public abstract class BaseIntegrationTests {
                         .withBody(responseBody)));
     }
 
-    protected Player findPlayerById(Long id) {
-        return playerRepository.findById(id).orElseThrow();
-    }
-
-    @BeforeEach
-    public void _setUp() {
-        operationModeManager.setOperationMode(getOperationMode());
-        restTemplate = restTemplateBuilder.rootUri("http://localhost:" + port).build();
-        latchForChangeEventPublishes = new CountDownLatch(1);
-        latchForEntityPersistedEvents = new CountDownLatch(1);
-    }
-
-    @AfterEach
-    public void _tearDown() {
-        idMappingRepository.deleteAll();
-        playerRepository.deleteAll();
-        clubRepository.deleteAll();
-        WireMock.resetToDefault();
-    }
-
-    @BeforeAll
-    static void _beforeAll() {
-        // Configure WireMock to have a longer shutdown timeout
-        //WireMockSpring.options().jettyStopTimeout(100000L).timeout(100000);
-    }
-
-    @AfterAll
-    static void _afterAll() {
-        eventMap.clear();
-    }
-
-    public void openDBConsole() {
+    protected void openDBConsole() {
         try {
             Server.startWebServer(DataSourceUtils.getConnection(dataSource));
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
-
-    protected abstract OperationMode getOperationMode();
 }

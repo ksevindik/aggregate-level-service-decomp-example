@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ClubControllerWithReadWriteModeIntegrationTests extends BaseIntegrationTests{
+public class ClubControllerWithReadWriteModeIntegrationTests extends BaseOperationModeIntegrationTests {
 
     private Club club1,club2, club3;
 

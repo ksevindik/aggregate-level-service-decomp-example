@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 @TestPropertySource(properties = {
         "monolith.entity-change-event-publisher.enabled=true"
 })
-public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseIntegrationTests {
+public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperationModeIntegrationTests {
 
     private Club club1, club2;
     private Player player1, player2, player3, player4;
@@ -152,9 +152,7 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseIntegr
 
         verifyPlayer(new Player(123L, "BS", "TR", 100, new Club(456L)), savedPlayer);
         idMapping = idMappingRepository.findByMonolithIdAndTypeName(123L, "Player");
-        verifyPlayer(new Player(idMapping.getServiceId(), "BS", "TR", 100, new Club(club1.getId())),
-                playerRepository.findById(idMapping.getServiceId()).get());
-
+        verifyPlayer(new Player(idMapping.getServiceId(), "BS", "TR", 100, new Club(club1.getId())), playerRepository.findById(idMapping.getServiceId()).get());
     }
 
     @Test

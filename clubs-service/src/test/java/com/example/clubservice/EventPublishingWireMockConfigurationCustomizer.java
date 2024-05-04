@@ -22,6 +22,7 @@ public class EventPublishingWireMockConfigurationCustomizer implements WireMockC
 
     @Override
     public void customize(WireMockConfiguration config) {
-        config.extensions(new TestMonolithEntityChangeEventPublisher(kafkaTemplate, objectMapper));
+        if(monolithEntityChangeEventPublisherEnabled)
+            config.extensions(new TestMonolithEntityChangeEventPublisher(kafkaTemplate, objectMapper));
     }
 }

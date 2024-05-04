@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
-public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseIntegrationTests {
+public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseOperationModeIntegrationTests {
 
     private Club club1, club2;
     private Player player1, player2, player3, player4;

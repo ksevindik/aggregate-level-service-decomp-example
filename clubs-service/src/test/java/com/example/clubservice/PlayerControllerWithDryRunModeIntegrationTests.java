@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
-public class PlayerControllerWithDryRunModeIntegrationTests extends BaseIntegrationTests {
+public class PlayerControllerWithDryRunModeIntegrationTests extends BaseOperationModeIntegrationTests {
 
     @Override
     protected OperationMode getOperationMode() {

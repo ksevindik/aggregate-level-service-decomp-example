@@ -19,48 +19,34 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ClubControllerWithReadWriteModeIntegrationTests extends BaseOperationModeIntegrationTests {
 
-    private Club club1,club2, club3;
-
     @Override
     protected OperationMode getOperationMode() {
         return OperationMode.READ_WRITE;
-    }
-
-    @BeforeEach
-    public void setUp() {
-        club1 = clubRepository.save(new Club("GS", "TR", "FT"));
-        club2 = clubRepository.save(new Club("BJK", "TR", "FU"));
-        club3 = clubRepository.save(new Club("RM", "ES", "FP"));
     }
 
     @Test
     public void testGetAllClubs() {
         ResponseEntity<List<Club>> response = restTemplate.exchange("/clubs",
                 HttpMethod.GET, null, new ParameterizedTypeReference<List<Club>>() {});
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(3, response.getBody().size());
-        MatcherAssert.assertThat(response.getBody().stream().map(c->c.getId()).collect(Collectors.toList()),
-                Matchers.containsInAnyOrder(club1.getId(), club2.getId(), club3.getId()));
+        verifyGetResponse(response, testFixture.club1, testFixture.club2, testFixture.club3);
     }
 
     @Test
     public void testGetClubsByCountry() {
         ResponseEntity<List<Club>> response = restTemplate.exchange("/clubs/country/ES",
                 HttpMethod.GET, null, new ParameterizedTypeReference<List<Club>>() {});
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(1, response.getBody().size());
-        assertEquals(club3.getId(), response.getBody().get(0).getId());
+        verifyGetResponse(response, testFixture.club2);
     }
 
     @Test
     public void testGetClubById() {
-        Club club = restTemplate.getForObject("/clubs/" + club1.getId(), Club.class);
-        assertEquals(club1.getId(), club.getId());
+        ResponseEntity<Club> response = restTemplate.getForEntity("/clubs/" + testFixture.club1.getId(), Club.class);
+        verifyGetResponse(response, testFixture.club1);
     }
 
     @Test
     public void testCreateClub() throws InterruptedException {
-        Club club = new Club("FB", "TR", "AK");
+        Club club = new Club("RM", "ES", "XX");
 
         Club savedClub = restTemplate.postForObject("/clubs", club, Club.class);
         Club clubFromDB = clubRepository.findById(savedClub.getId()).orElseThrow();
@@ -76,9 +62,9 @@ public class ClubControllerWithReadWriteModeIntegrationTests extends BaseOperati
 
     @Test
     public void testUpdatePresident() {
-        registerMonolithResponse("/clubs/123","GET",null,200,"""
+        registerMonolithResponse("/clubs/456","GET",null,200,"""
                 {
-                    "id": 123,
+                    "id": 456,
                     "name": "GS",
                     "country": "TRY",
                     "president": "FT",
@@ -88,10 +74,10 @@ public class ClubControllerWithReadWriteModeIntegrationTests extends BaseOperati
                 """);
 
 
-        restTemplate.put("/clubs/"+ club1.getId() + "/president", "AY");
+        restTemplate.put("/clubs/"+ testFixture.club1.getId() + "/president", "AY");
 
-        Club clubFromDB = clubRepository.findById(club1.getId()).orElseThrow();
-        verifyClub(new Club("GS", "TRY", "AY"), club1.getId(), clubFromDB);
+        Club clubFromDB = clubRepository.findById(testFixture.club1.getId()).orElseThrow();
+        verifyClub(new Club("GS", "TRY", "AY"), testFixture.club1.getId(), clubFromDB);
         waitForEntityChangeEvenToBetPublished();
         verifyEntityChangeEvent(clubFromDB, "UPDATE");
     }

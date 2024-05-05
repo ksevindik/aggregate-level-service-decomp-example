@@ -35,7 +35,7 @@ public class ClubControllerWithReadOnlyModeIntegrationTests extends BaseOperatio
     public void testGetClubsByCountry() {
         ResponseEntity<List<Club>> response = restTemplate.exchange("/clubs/country/ES",
                 HttpMethod.GET, null, new ParameterizedTypeReference<List<Club>>() {});
-        verifyGetResponse(response, testFixture.club3FromMonolith);
+        verifyGetResponse(response, testFixture.club2FromMonolith);
     }
 
     @Test

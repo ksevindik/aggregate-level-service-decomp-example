@@ -140,7 +140,7 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperat
                     "modified": "2021-07-01T00:00:00"
                 }""" );
 
-        verifyPlayer(new Player(testFixture.club1.getId(), "SGS", "TR", 100, testFixture.club1),
+        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 100, testFixture.club1),
                 playerRepository.findById(testFixture.player1.getId()).get());
 
         Player updatedPlayer = restTemplate.exchange(

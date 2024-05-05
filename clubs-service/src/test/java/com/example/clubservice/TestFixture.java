@@ -29,7 +29,7 @@ public class TestFixture {
     private void createTestFixture() {
         //service side
         club1 = clubRepository.save(new Club("GS", "TR", "FT"));
-        club2 = clubRepository.save(new Club("BJK", "TR", "FU"));
+        club2 = clubRepository.save(new Club("BJK", "ES", "FU"));
         club3 = clubRepository.save(new Club("FB", "TR", "AK"));
 
         player1 = playerRepository.save(new Player("SGS", "TR", 100, club1));
@@ -40,7 +40,7 @@ public class TestFixture {
         //monolith side
         club1FromMonolith = new Club("GS", "TR", "FT");
         club1FromMonolith.setId(456L);
-        club2FromMonolith = new Club("BJK", "TR", "FU");
+        club2FromMonolith = new Club("BJK", "ES", "FU");
         club2FromMonolith.setId(123L);
         club3FromMonolith = new Club("FB", "TR", "AK");
         club3FromMonolith.setId(321L);

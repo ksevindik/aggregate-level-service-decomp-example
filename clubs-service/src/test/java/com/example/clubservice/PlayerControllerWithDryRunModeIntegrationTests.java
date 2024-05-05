@@ -2,7 +2,6 @@ package com.example.clubservice;
 
 import com.example.clubservice.base.BaseOperationModeIntegrationTests;
 import com.example.clubservice.migration.OperationMode;
-import com.example.clubservice.model.Club;
 import com.example.clubservice.model.IdMapping;
 import com.example.clubservice.model.Player;
 import com.github.tomakehurst.wiremock.client.WireMock;
@@ -157,7 +156,7 @@ public class PlayerControllerWithDryRunModeIntegrationTests extends BaseOperatio
 
     @Test
     public void testCreatePlayer() {
-        Player player = new Player("SGS", "TR", 100, null);
+        Player player = new Player("XXX", "TR", 99, null);
         player.setClubId(456L);
 
         WireMock.stubFor(WireMock.post("/players")
@@ -165,29 +164,29 @@ public class PlayerControllerWithDryRunModeIntegrationTests extends BaseOperatio
                         .withHeader("Content-Type","application/json")
                         .withBody("""
                                 {
-                                    "id": 789,
-                                    "name": "SGS",
+                                    "id": 111,
+                                    "name": "XXX",
                                     "country": "TR",
-                                    "rating": 100,
+                                    "rating": 99,
                                     "clubId": 456
                                 }
                                 """)));
 
         Player savedPlayer = restTemplate.postForObject("/players", player, Player.class);
 
-        assertEquals(789L, savedPlayer.getId());
-        assertEquals("SGS", savedPlayer.getName());
+        assertEquals(111L, savedPlayer.getId());
+        assertEquals("XXX", savedPlayer.getName());
         assertEquals("TR", savedPlayer.getCountry());
-        assertEquals(100, savedPlayer.getRating());
+        assertEquals(99, savedPlayer.getRating());
         assertEquals(456L, savedPlayer.getClubId());
 
-        IdMapping idMapping = idMappingRepository.findByMonolithIdAndTypeName(123L, "Player");
+        IdMapping idMapping = idMappingRepository.findByMonolithIdAndTypeName(111L, "Player");
 
         Player playerFromDB = playerRepository.findById(idMapping.getServiceId()).orElseThrow();
-        assertEquals("SGS", playerFromDB.getName());
+        assertEquals("XXX", playerFromDB.getName());
         assertEquals("TR", playerFromDB.getCountry());
-        assertEquals(100, playerFromDB.getRating());
-        assertEquals(456L, playerFromDB.getClubId());
+        assertEquals(99, playerFromDB.getRating());
+        assertEquals(testFixture.club1.getId(), playerFromDB.getClubId());
     }
 
     @Test

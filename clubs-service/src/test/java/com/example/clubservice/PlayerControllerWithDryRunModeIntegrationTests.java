@@ -6,16 +6,10 @@ import com.example.clubservice.model.Club;
 import com.example.clubservice.model.IdMapping;
 import com.example.clubservice.model.Player;
 import com.github.tomakehurst.wiremock.client.WireMock;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -27,137 +21,142 @@ public class PlayerControllerWithDryRunModeIntegrationTests extends BaseOperatio
         return OperationMode.DRY_RUN;
     }
 
-    @BeforeEach
-    public void setUp() {
-        String responseBodyForGetAllPlayers = """
-                [
-                    {
-                        "id": 123
-                    },
-                    {
-                        "id": 456
-                    },
-                    {
-                        "id": 789
-                    }
-                ]
-                """;
-
-        String responseBodyForGetPlayersByClubName = """
-                [
-                    {
-                        "id": 123
-                    }
-                ]
-                """;
-
-        String responseBodyForGetPlayersByCountry = """
-                [
-                    {
-                        "id": 123
-                    },
-                    {
-                        "id": 456
-                    }
-                ]
-                """;
-
-        String responseBodyForGetPlayerById = """
-                {
-                    "id": 123
-                }
-                """;
-
-        String responseBodyForGetPlayersByNamePattern = """
-                [
-                    {
-                        "id": 456
-                    },
-                    {
-                        "id": 789
-                    }
-                ]
-                """;
-
-
-        WireMock.stubFor(WireMock.get("/players")
-                .willReturn(WireMock.aResponse().withStatus(200)
-                        .withHeader("Content-Type","application/json")
-                        .withBody(responseBodyForGetAllPlayers)));
-
-        WireMock.stubFor(WireMock.get("/players/clubName?clubName=FB")
-                .willReturn(WireMock.aResponse().withStatus(200)
-                        .withHeader("Content-Type","application/json")
-                        .withBody(responseBodyForGetPlayersByClubName)));
-
-        WireMock.stubFor(WireMock.get("/players/country/TR")
-                .willReturn(WireMock.aResponse().withStatus(200)
-                        .withHeader("Content-Type","application/json")
-                        .withBody(responseBodyForGetPlayersByCountry)));
-
-        WireMock.stubFor(WireMock.get("/players/123")
-                .willReturn(WireMock.aResponse().withStatus(200)
-                        .withHeader("Content-Type","application/json")
-                        .withBody(responseBodyForGetPlayerById)));
-
-        WireMock.stubFor(WireMock.get("/players/search?name=SGS")
-                .willReturn(WireMock.aResponse().withStatus(200)
-                        .withHeader("Content-Type","application/json")
-                        .withBody(responseBodyForGetPlayersByNamePattern)));
-    }
-
     @Test
     public void testGetAllPlayers() {
-        ResponseEntity<List<Player>> response = restTemplate.exchange("/players",
-                HttpMethod.GET, null, new ParameterizedTypeReference<List<Player>>() {});
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(3, response.getBody().size());
-        MatcherAssert.assertThat(response.getBody().stream().map(p->p.getId()).collect(Collectors.toList()),
-                Matchers.containsInAnyOrder(123L, 456L, 789L));
+        /*
+        players should be retrieved from the monolith side
+         */
+        registerMonolithResponse("/players", "GET", null, 200, """
+                [
+                    {
+                        "id": 789,
+                        "name": "SGS",
+                        "country": "TR",
+                        "rating": 100,
+                        "clubId": 456
+                    },
+                    {
+                        "id": 790,
+                        "name": "SYS",
+                        "country": "TR",
+                        "rating": 90,
+                        "clubId": 456
+                    },
+                    {
+                        "id": 780,
+                        "name": "HS",
+                        "country": "US",
+                        "rating": 80,
+                        "clubId": 123
+                    },
+                    {
+                        "id": 770,
+                        "name": "KS",
+                        "country": "DE",
+                        "rating": 70
+                    }
+                ]
+                """);
+
+        ResponseEntity<List<Player>> response = performGetPlayersRequest("/players");
+
+        verifyGetResponse(response,
+                testFixture.player1FromMonolith,
+                testFixture.player2FromMonolith,
+                testFixture.player3FromMonolith,
+                testFixture.player4FromMonolith);
     }
 
     @Test
     public void testGetPlayersByClubName() {
-        ResponseEntity<List<Player>> response = restTemplate.exchange("/players/clubName?clubName=FB",
-                HttpMethod.GET, null, new ParameterizedTypeReference<List<Player>>() {});
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(1, response.getBody().size());
-        assertEquals(123L, response.getBody().get(0).getId());
+        /*
+        players should be retrieved from the monolith side
+         */
+        registerMonolithResponse("/players/clubName?clubName=GS", "GET", null, 200, """
+                [
+                    {
+                        "id": 789,
+                        "name": "SGS",
+                        "country": "TR",
+                        "rating": 100,
+                        "clubId": 456
+                    },
+                    {
+                        "id": 790,
+                        "name": "SYS",
+                        "country": "TR",
+                        "rating": 90,
+                        "clubId": 456
+                    }
+                ]
+                """);
+        ResponseEntity<List<Player>> response = performGetPlayersRequest("/players/clubName?clubName=GS");
+        verifyGetResponse(response,
+                testFixture.player1FromMonolith,
+                testFixture.player2FromMonolith)
+        ;
     }
 
     @Test
     public void testGetPlayersByCountry() {
-        ResponseEntity<List<Player>> response = restTemplate.exchange("/players/country/TR",
-                HttpMethod.GET, null, new ParameterizedTypeReference<List<Player>>() {});
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(2, response.getBody().size());
-        MatcherAssert.assertThat(response.getBody().stream().map(p->p.getId()).collect(Collectors.toList()),
-                Matchers.containsInAnyOrder(123L, 456L));
+        /*
+        players should be retrieved from the monolith side
+         */
+        registerMonolithResponse("/players/country/DE", "GET", null, 200, """
+                [
+                    {
+                        "id": 770,
+                        "name": "KS",
+                        "country": "DE",
+                        "rating": 70
+                    }
+                ]
+                """);
+        ResponseEntity<List<Player>> response = performGetPlayersRequest("/players/country/DE");
+
+        verifyGetResponse(response, testFixture.player4FromMonolith);
     }
 
     @Test
     public void testGetPlayerById() {
-        ResponseEntity<Player> response = restTemplate.getForEntity("/players/123", Player.class);
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(123L, response.getBody().getId());
+        /*
+        players should be retrieved from the monolith side
+         */
+        registerMonolithResponse("/players/789", "GET", null, 200, """
+                    {
+                        "id": 789,
+                        "name": "SGS",
+                        "country": "TR",
+                        "rating": 100,
+                        "clubId": 456
+                    }
+                """);
+        ResponseEntity<Player> response = performGetPlayerRequest("/players/789");
+        verifyGetResponse(response, testFixture.player1FromMonolith);
     }
 
     @Test
     public void testGetPlayersByNamePattern() {
-        ResponseEntity<List<Player>> response = restTemplate.exchange("/players/search?name=SGS",
-                HttpMethod.GET, null, new ParameterizedTypeReference<List<Player>>() {});
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(2, response.getBody().size());
-        MatcherAssert.assertThat(response.getBody().stream().map(p->p.getId()).collect(Collectors.toList()),
-                Matchers.containsInAnyOrder(456L, 789L));
+        /*
+        players should be retrieved from the monolith side
+         */
+        registerMonolithResponse("/players/search?name=SGS", "GET", null, 200, """
+                [
+                    {
+                        "id": 789,
+                        "name": "SGS",
+                        "country": "TR",
+                        "rating": 100,
+                        "clubId": 456
+                    }
+                ]
+                """);
+        ResponseEntity<List<Player>> response = performGetPlayersRequest("/players/search?name=SGS");
+        verifyGetResponse(response, testFixture.player1FromMonolith);
     }
 
     @Test
     public void testCreatePlayer() {
-        Club club = clubRepository.save(new Club("FB", "TR", "AK"));
-
-        idMappingRepository.save(new IdMapping(club.getId(), 456L, "Club"));
-
         Player player = new Player("SGS", "TR", 100, null);
         player.setClubId(456L);
 
@@ -166,7 +165,7 @@ public class PlayerControllerWithDryRunModeIntegrationTests extends BaseOperatio
                         .withHeader("Content-Type","application/json")
                         .withBody("""
                                 {
-                                    "id": 123,
+                                    "id": 789,
                                     "name": "SGS",
                                     "country": "TR",
                                     "rating": 100,
@@ -176,7 +175,7 @@ public class PlayerControllerWithDryRunModeIntegrationTests extends BaseOperatio
 
         Player savedPlayer = restTemplate.postForObject("/players", player, Player.class);
 
-        assertEquals(123L, savedPlayer.getId());
+        assertEquals(789L, savedPlayer.getId());
         assertEquals("SGS", savedPlayer.getName());
         assertEquals("TR", savedPlayer.getCountry());
         assertEquals(100, savedPlayer.getRating());
@@ -188,17 +187,11 @@ public class PlayerControllerWithDryRunModeIntegrationTests extends BaseOperatio
         assertEquals("SGS", playerFromDB.getName());
         assertEquals("TR", playerFromDB.getCountry());
         assertEquals(100, playerFromDB.getRating());
-        assertEquals(club.getId(), playerFromDB.getClubId());
+        assertEquals(456L, playerFromDB.getClubId());
     }
 
     @Test
     public void testUpdateRating() {
-        Club club = clubRepository.save(new Club("FB", "TR", "AK"));
-        Player player = playerRepository.save(new Player("SGS", "TR", 100, club));
-
-        idMappingRepository.save(new IdMapping(club.getId(), 456L, "Club"));
-        idMappingRepository.save(new IdMapping(player.getId(), 789L, "Player"));
-
         WireMock.stubFor(WireMock.put("/players/789/rating").withRequestBody(WireMock.equalTo("200"))
                 .willReturn(WireMock.aResponse().withStatus(200)
                         .withHeader("Content-Type","application/json")
@@ -211,46 +204,37 @@ public class PlayerControllerWithDryRunModeIntegrationTests extends BaseOperatio
                                     "clubId": 456
                                 }
                                 """)));
-
         restTemplate.put("/players/789/rating", 200);
-        Player playerFromDB = playerRepository.findById(player.getId()).orElseThrow();
+        Player playerFromDB = playerRepository.findById(testFixture.player1.getId()).orElseThrow();
 
         assertEquals("SGS", playerFromDB.getName());
         assertEquals("TR", playerFromDB.getCountry());
         assertEquals(200, playerFromDB.getRating());
-        assertEquals(club.getId(), playerFromDB.getClubId());
+        assertEquals(testFixture.club1.getId(), playerFromDB.getClubId());
     }
 
     @Test
     public void testTransferPlayer() {
-        Club club1 = clubRepository.save(new Club("FB", "TR", "AK"));
-        Club club2 = clubRepository.save(new Club("GS", "TR", "AY"));
-        Player player = playerRepository.save(new Player("SGS", "TR", 100, club1));
-
-        idMappingRepository.save(new IdMapping(club1.getId(), 456L, "Club"));
-        idMappingRepository.save(new IdMapping(club2.getId(), 789L, "Club"));
-        idMappingRepository.save(new IdMapping(player.getId(), 123L, "Player"));
-
-        WireMock.stubFor(WireMock.put("/players/123/transfer").withRequestBody(WireMock.equalTo("789"))
+        WireMock.stubFor(WireMock.put("/players/789/transfer").withRequestBody(WireMock.equalTo("123"))
                 .willReturn(WireMock.aResponse().withStatus(200)
                         .withHeader("Content-Type","application/json")
                         .withBody("""
                                 {
-                                    "id": 123,
+                                    "id": 789,
                                     "name": "SGS",
                                     "country": "TR",
                                     "rating": 100,
-                                    "clubId": 789
+                                    "clubId": 123
                                 }
                                 """)));
 
-        restTemplate.put("/players/123/transfer", 789);
-        Player playerFromDB = playerRepository.findById(player.getId()).orElseThrow();
+        restTemplate.put("/players/789/transfer", 123);
+        Player playerFromDB = playerRepository.findById(testFixture.player1.getId()).orElseThrow();
 
         assertEquals("SGS", playerFromDB.getName());
         assertEquals("TR", playerFromDB.getCountry());
         assertEquals(100, playerFromDB.getRating());
-        assertEquals(club2.getId(), playerFromDB.getClubId());
+        assertEquals(testFixture.club2.getId(), playerFromDB.getClubId());
     }
 
 }

@@ -5,20 +5,13 @@ import com.example.clubservice.migration.OperationMode;
 import com.example.clubservice.model.Club;
 import com.example.clubservice.model.IdMapping;
 import com.example.clubservice.model.Player;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 
 import java.util.List;
-import java.util.stream.Collectors;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 
@@ -26,31 +19,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
         "monolith.entity-change-event-publisher.enabled=true"
 })
 public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperationModeIntegrationTests {
-
-    private Club club1, club2;
-    private Player player1, player2, player3, player4;
-
     @Override
     protected OperationMode getOperationMode() {
         return OperationMode.READ_ONLY;
     }
-
-    @BeforeEach
-    public void setUp() {
-        club1 = clubRepository.save(new Club("GS", "TR", "FT"));
-        club2 = clubRepository.save(new Club("BJK", "TR", "FU"));
-
-        player1 = playerRepository.save(new Player("SGS", "TR", 100, club1));
-        player2 = playerRepository.save(new Player("SYS", "TR", 90, club1));
-        player3 = playerRepository.save(new Player("HS", "US", 80, club2));
-        player4 = playerRepository.save(new Player("KS", "DE", 70, null));
-
-        createIdMappings(
-                new IdMapping(club1.getId(), 456L, "Club"),
-                new IdMapping(club2.getId(), 123L, "Club"),
-                new IdMapping(player1.getId(), 789L, "Player"));
-    }
-
 
     @Test
     public void testGetAllPlayers() {
@@ -58,12 +30,14 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperat
         there should be no interaction with the monolith side
         all the result should be retrieved from the service side, however entity ids should be of monolith side
          */
-        ResponseEntity<List<Player>> response = restTemplate.exchange("/players",
-                HttpMethod.GET, null, new ParameterizedTypeReference<List<Player>>() {});
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(4, response.getBody().size());
-        MatcherAssert.assertThat(response.getBody().stream().map(p->p.getId()).collect(Collectors.toList()),
-                Matchers.containsInAnyOrder(player1.getId(), player2.getId(), player3.getId(), player4.getId()));
+        ResponseEntity<List<Player>> response = performGetPlayersRequest("/players");
+
+        verifyGetResponse(response,
+                testFixture.player1FromMonolith,
+                testFixture.player2FromMonolith,
+                testFixture.player3FromMonolith,
+                testFixture.player4FromMonolith
+        );
     }
 
     @Test
@@ -72,12 +46,11 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperat
         there should be no interaction with the monolith side
         all the result should be retrieved from the service side, however entity ids should be of monolith side
          */
-        ResponseEntity<List<Player>> response = restTemplate.exchange("/players/clubName?clubName=GS",
-                HttpMethod.GET, null, new ParameterizedTypeReference<List<Player>>() {});
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(2, response.getBody().size());
-        MatcherAssert.assertThat(response.getBody().stream().map(p->p.getId()).collect(Collectors.toList()),
-                Matchers.containsInAnyOrder(player1.getId(), player2.getId()));
+        ResponseEntity<List<Player>> response = performGetPlayersRequest("/players/clubName?clubName=GS");
+        verifyGetResponse(response,
+                testFixture.player1FromMonolith,
+                testFixture.player2FromMonolith
+        );
     }
 
     @Test
@@ -86,12 +59,8 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperat
         there should be no interaction with the monolith side
         all the result should be retrieved from the service side, however entity ids should be of monolith side
          */
-        ResponseEntity<List<Player>> response = restTemplate.exchange("/players/country/DE",
-                HttpMethod.GET, null, new ParameterizedTypeReference<List<Player>>() {});
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(1, response.getBody().size());
-        MatcherAssert.assertThat(response.getBody().stream().map(p->p.getId()).collect(Collectors.toList()),
-                Matchers.containsInAnyOrder(player4.getId()));
+        ResponseEntity<List<Player>> response = performGetPlayersRequest("/players/country/DE");
+        verifyGetResponse(response, testFixture.player4FromMonolith);
     }
 
     @Test
@@ -100,9 +69,8 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperat
         there should be no interaction with the monolith side
         all the result should be retrieved from the service side, however entity ids should be of monolith side
          */
-        ResponseEntity<Player> response = restTemplate.getForEntity("/players/" + player1.getId(), Player.class);
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(player1.getId(), response.getBody().getId());
+        ResponseEntity<Player> response = performGetPlayerRequest("/players/789");
+        verifyGetResponse(response, testFixture.player1FromMonolith);
     }
 
     @Test
@@ -111,12 +79,8 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperat
         there should be no interaction with the monolith side
         all the result should be retrieved from the service side, however entity ids should be of monolith side
          */
-        ResponseEntity<List<Player>> response = restTemplate.exchange("/players/search?name=SGS",
-                HttpMethod.GET, null, new ParameterizedTypeReference<List<Player>>() {});
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(1, response.getBody().size());
-        MatcherAssert.assertThat(response.getBody().stream().map(p->p.getId()).collect(Collectors.toList()),
-                Matchers.containsInAnyOrder(player1.getId()));
+        ResponseEntity<List<Player>> response = performGetPlayersRequest("/players/search?name=SGS");
+        verifyGetResponse(response, testFixture.player1FromMonolith);
     }
 
     @Test
@@ -153,7 +117,7 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperat
 
         verifyPlayer(new Player(123L, "BS", "TR", 100, new Club(456L)), savedPlayer);
         idMapping = idMappingRepository.findByMonolithIdAndTypeName(123L, "Player");
-        verifyPlayer(new Player(idMapping.getServiceId(), "BS", "TR", 100, new Club(club1.getId())), playerRepository.findById(idMapping.getServiceId()).get());
+        verifyPlayer(new Player(idMapping.getServiceId(), "BS", "TR", 100, testFixture.club1), playerRepository.findById(idMapping.getServiceId()).get());
     }
 
     @Test
@@ -176,8 +140,8 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperat
                     "modified": "2021-07-01T00:00:00"
                 }""" );
 
-        verifyPlayer(new Player(player1.getId(), "SGS", "TR", 100, new Club(club1.getId())),
-                playerRepository.findById(player1.getId()).get());
+        verifyPlayer(new Player(testFixture.club1.getId(), "SGS", "TR", 100, testFixture.club1),
+                playerRepository.findById(testFixture.player1.getId()).get());
 
         Player updatedPlayer = restTemplate.exchange(
                 "/players/789/rating",
@@ -186,8 +150,8 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperat
         waitForEntityPersistedEvent();
 
         verifyPlayer(new Player(789L, "SGS", "TR", 200, new Club(456L)), updatedPlayer);
-        verifyPlayer(new Player(player1.getId(), "SGS", "TR", 200, new Club(club1.getId())),
-                playerRepository.findById(player1.getId()).get());
+        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 200, testFixture.club1),
+                playerRepository.findById(testFixture.player1.getId()).get());
     }
 
     @Test
@@ -210,8 +174,8 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperat
                     "modified": "2021-07-01T00:00:00"
                 }""");
 
-        verifyPlayer(new Player(player1.getId(), "SGS", "TR", 100, new Club(club1.getId())),
-                playerRepository.findById(player1.getId()).get());
+        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 100, testFixture.club1),
+                playerRepository.findById(testFixture.player1.getId()).get());
 
         Player updatedPlayer = restTemplate.exchange(
                 "/players/789/transfer",
@@ -220,8 +184,8 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperat
         waitForEntityPersistedEvent();
 
         verifyPlayer(new Player(789L, "SGS", "TR", 100, new Club(123L)), updatedPlayer);
-        verifyPlayer(new Player(player1.getId(), "SGS", "TR", 100, new Club(club2.getId())),
-                playerRepository.findById(player1.getId()).get());
+        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 100, testFixture.club2),
+                playerRepository.findById(testFixture.player1.getId()).get());
     }
 
 }

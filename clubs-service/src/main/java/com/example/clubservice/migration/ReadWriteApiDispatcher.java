@@ -38,30 +38,41 @@ public class ReadWriteApiDispatcher {
 
     public List<Club> getAllClubs() {
         return executeCommand(
-                () -> clubService.getAllClubs(),
+                () -> clubService.getAllClubs().stream().map(this::convertToMonolithIds).toList(),
                 () -> clubService.getAllClubs(),
                 () -> monolithReadWriteApiAdapter.getAllClubs());
     }
 
     public List<Club> getClubsByCountry(String country) {
         return executeCommand(
-                () -> clubService.getClubsByCountry(country),
+                () -> clubService.getClubsByCountry(country).stream().map(this::convertToMonolithIds).toList(),
                 () -> clubService.getClubsByCountry(country),
                 () -> monolithReadWriteApiAdapter.getClubsByCountry(country));
     }
 
     public Optional<Club> getClubById(Long id) {
         return executeCommand(
-                () -> clubService.getClubById(id),
+                () -> {
+                    Long clubId = idMappingRepository.findByMonolithIdAndTypeName(id, "Club").getServiceId();
+                    Club club = clubService.getClubById(clubId).orElse(null);
+                    return Optional.ofNullable(convertToMonolithIds(club));
+                },
                 () -> clubService.getClubById(id),
                 () -> Optional.ofNullable(monolithReadWriteApiAdapter.getClubById(id)));
     }
 
     public List<Club> getClubsByNamePattern(String namePattern) {
         return executeCommand(
-                () -> clubService.getClubsByNamePattern(namePattern),
+                () -> clubService.getClubsByNamePattern(namePattern).stream().map(this::convertToMonolithIds).toList(),
                 () -> clubService.getClubsByNamePattern(namePattern),
                 () -> monolithReadWriteApiAdapter.getClubsByNamePattern(namePattern));
+    }
+
+    private Club convertToMonolithIds(Club club) {
+        if(club == null) return null;
+        Long clubId = idMappingRepository.findByServiceIdAndTypeName(club.getId(), "Club").getMonolithId();
+        club.setId(clubId);
+        return club;
     }
 
     public Club createClub(Club club) {
@@ -96,37 +107,53 @@ public class ReadWriteApiDispatcher {
 
     public List<Player> getAllPlayers() {
         return executeCommand(
-                () -> playerService.getAllPlayers(),
+                () -> playerService.getAllPlayers().stream().map(this::convertToMonolithIds).toList(),
                 () -> playerService.getAllPlayers(),
                 () -> monolithReadWriteApiAdapter.getAllPlayers());
     }
 
     public List<Player> getPlayersByClubName(String clubName) {
         return executeCommand(
-                () -> playerService.getPlayersByClubName(clubName),
+                () -> playerService.getPlayersByClubName(clubName).stream().map(this::convertToMonolithIds).toList(),
                 () -> playerService.getPlayersByClubName(clubName),
                 () -> monolithReadWriteApiAdapter.getPlayersByClubName(clubName));
     }
 
     public List<Player> getPlayersByCountry(String country) {
         return executeCommand(
-                () -> playerService.getPlayersByCountry(country),
+                () -> playerService.getPlayersByCountry(country).stream().map(this::convertToMonolithIds).toList(),
                 () -> playerService.getPlayersByCountry(country),
                 () -> monolithReadWriteApiAdapter.getPlayersByCountry(country));
     }
 
     public Optional<Player> getPlayerById(Long id) {
         return executeCommand(
-                () -> playerService.getPlayerById(id),
+                () -> {
+                    Long serviceId = idMappingRepository.findByMonolithIdAndTypeName(id, "Player").getServiceId();
+                    Player player = playerService.getPlayerById(serviceId).orElse(null);
+                    return Optional.ofNullable(convertToMonolithIds(player));
+                },
                 () -> playerService.getPlayerById(id),
                 () -> Optional.ofNullable(monolithReadWriteApiAdapter.getPlayerById(id)));
     }
 
     public List<Player> getPlayersByNamePattern(String name) {
         return executeCommand(
-                () -> playerService.getPlayersByNamePattern(name),
+                () -> playerService.getPlayersByNamePattern(name).stream().map(this::convertToMonolithIds).toList(),
                 () -> playerService.getPlayersByNamePattern(name),
                 () -> monolithReadWriteApiAdapter.getPlayersByNamePattern(name));
+    }
+
+    private Player convertToMonolithIds(Player player) {
+        if(player == null) return null;
+        Long playerId = idMappingRepository.findByServiceIdAndTypeName(player.getId(), "Player").getMonolithId();
+        player.setId(playerId);
+        Club club = player.getClub();
+        if(club != null) {
+            Long clubId = idMappingRepository.findByServiceIdAndTypeName(club.getId(), "Club").getMonolithId();
+            player.setClub(new Club(clubId));
+        }
+        return player;
     }
 
     public Player createPlayer(Player player) {

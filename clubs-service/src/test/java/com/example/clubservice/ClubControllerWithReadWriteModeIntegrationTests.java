@@ -76,8 +76,6 @@ public class ClubControllerWithReadWriteModeIntegrationTests extends BaseOperati
 
     @Test
     public void testUpdatePresident() {
-        idMappingRepository.save(new IdMapping(club1.getId(), 123L, "Club"));
-
         registerMonolithResponse("/clubs/123","GET",null,200,"""
                 {
                     "id": 123,

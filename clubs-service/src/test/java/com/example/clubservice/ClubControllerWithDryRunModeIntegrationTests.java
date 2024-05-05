@@ -105,8 +105,6 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseOperationM
         Club club = new Club("FB", "TR", "AK");
         club = clubRepository.save(club);
 
-        idMappingRepository.save(new IdMapping(club.getId(), 123L, "Club"));
-
         registerMonolithResponse("/clubs/123/president", "PUT", "AY", 200, """
                 {
                     "id": 123,

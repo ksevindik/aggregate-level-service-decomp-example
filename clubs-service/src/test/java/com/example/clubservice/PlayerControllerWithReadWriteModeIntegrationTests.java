@@ -3,50 +3,21 @@ package com.example.clubservice;
 import com.example.clubservice.base.BaseOperationModeIntegrationTests;
 import com.example.clubservice.migration.OperationMode;
 import com.example.clubservice.model.Club;
-import com.example.clubservice.model.IdMapping;
 import com.example.clubservice.model.Player;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
-import java.util.stream.Collectors;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseOperationModeIntegrationTests {
 
-    private Club club1, club2;
-    private Player player1, player2, player3, player4;
-
     @Override
     protected OperationMode getOperationMode() {
         return OperationMode.READ_WRITE;
     }
-
-    @BeforeEach
-    public void setUp() {
-        club1 = clubRepository.save(new Club("GS", "TR", "FT"));
-        club2 = clubRepository.save(new Club("BJK", "TR", "FU"));
-
-        player1 = playerRepository.save(new Player("SGS", "TR", 100, club1));
-        player2 = playerRepository.save(new Player("SYS", "TR", 90, club1));
-        player3 = playerRepository.save(new Player("HS", "US", 80, club2));
-        player4 = playerRepository.save(new Player("KS", "DE", 70, null));
-
-        createIdMappings(
-                new IdMapping(club1.getId(), 456L, "Club"),
-                new IdMapping(club2.getId(), 123L, "Club"),
-                new IdMapping(player1.getId(), 789L, "Player"));
-    }
-
 
     @Test
     public void testGetAllPlayers() {
@@ -54,12 +25,9 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseOpera
         there should be no interaction with the monolith side
         all the result should be retrieved from the service side
          */
-        ResponseEntity<List<Player>> response = restTemplate.exchange("/players",
-                HttpMethod.GET, null, new ParameterizedTypeReference<List<Player>>() {});
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(4, response.getBody().size());
-        MatcherAssert.assertThat(response.getBody().stream().map(p->p.getId()).collect(Collectors.toList()),
-                Matchers.containsInAnyOrder(player1.getId(), player2.getId(), player3.getId(), player4.getId()));
+        ResponseEntity<List<Player>> response = performGetPlayersRequest("/players");
+        response.getBody().iterator().next().equals(testFixture.player1);
+        verifyGetResponse(response, testFixture.player1, testFixture.player2, testFixture.player3, testFixture.player4);
     }
 
     @Test
@@ -68,12 +36,8 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseOpera
         there should be no interaction with the monolith side
         all the result should be retrieved from the service side
          */
-        ResponseEntity<List<Player>> response = restTemplate.exchange("/players/clubName?clubName=GS",
-                HttpMethod.GET, null, new ParameterizedTypeReference<List<Player>>() {});
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(2, response.getBody().size());
-        MatcherAssert.assertThat(response.getBody().stream().map(p->p.getId()).collect(Collectors.toList()),
-                Matchers.containsInAnyOrder(player1.getId(), player2.getId()));
+        ResponseEntity<List<Player>> response = performGetPlayersRequest("/players/clubName?clubName=GS");
+        verifyGetResponse(response, testFixture.player1, testFixture.player2);
     }
 
     @Test
@@ -82,12 +46,8 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseOpera
         there should be no interaction with the monolith side
         all the result should be retrieved from the service side
          */
-        ResponseEntity<List<Player>> response = restTemplate.exchange("/players/country/DE",
-                HttpMethod.GET, null, new ParameterizedTypeReference<List<Player>>() {});
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(1, response.getBody().size());
-        MatcherAssert.assertThat(response.getBody().stream().map(p->p.getId()).collect(Collectors.toList()),
-                Matchers.containsInAnyOrder(player4.getId()));
+        ResponseEntity<List<Player>> response = performGetPlayersRequest("/players/country/DE");
+        verifyGetResponse(response, testFixture.player4);
     }
 
     @Test
@@ -96,9 +56,8 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseOpera
         there should be no interaction with the monolith side
         all the result should be retrieved from the service side
          */
-        ResponseEntity<Player> response = restTemplate.getForEntity("/players/" + player1.getId(), Player.class);
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(player1.getId(), response.getBody().getId());
+        ResponseEntity<Player> response = performGetPlayerRequest("/players/" + testFixture.player1.getId());
+        verifyGetResponse(response, testFixture.player1);
     }
 
     @Test
@@ -107,12 +66,8 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseOpera
         there should be no interaction with the monolith side
         all the result should be retrieved from the service side
          */
-        ResponseEntity<List<Player>> response = restTemplate.exchange("/players/search?name=SGS",
-                HttpMethod.GET, null, new ParameterizedTypeReference<List<Player>>() {});
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(1, response.getBody().size());
-        MatcherAssert.assertThat(response.getBody().stream().map(p->p.getId()).collect(Collectors.toList()),
-                Matchers.containsInAnyOrder(player1.getId()));
+        ResponseEntity<List<Player>> response = performGetPlayersRequest("/players/search?name=SGS");
+        verifyGetResponse(response, testFixture.player1);
     }
 
     @Test
@@ -122,7 +77,7 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseOpera
         first, player creation should only occur at the service side
         then player change event should be published as a kafka message for the monolith side to consume
          */
-        Player player = new Player("BS", "TR", 100, club2);
+        Player player = new Player("BS", "TR", 100, testFixture.club2);
 
         Player savedPlayer = restTemplate.postForObject("/players", player, Player.class);
 
@@ -131,7 +86,7 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseOpera
         verifyEntityChangeEvent(new Player(savedPlayer.getId(),"BS","TR",100, new Club(123L)), "CREATE");
 
         Player playerFromDB = findPlayerById(savedPlayer.getId());
-        verifyPlayer(new Player(savedPlayer.getId(),"BS","TR",100, new Club(club2.getId())), playerFromDB);
+        verifyPlayer(new Player(savedPlayer.getId(),"BS","TR",100, testFixture.club2), playerFromDB);
         verifyPlayer(savedPlayer,playerFromDB);
         assertTrue(playerFromDB.isSynced());
     }
@@ -157,18 +112,18 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseOpera
                 """);
 
         //before update
-        Player playerFromDB = findPlayerById(player1.getId());
-        verifyPlayer(new Player(player1.getId(), "SGS", "TR", 100, new Club(club1.getId())), playerFromDB);
+        Player playerFromDB = findPlayerById(testFixture.player1.getId());
+        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 100, testFixture.club1), playerFromDB);
         assertFalse(playerFromDB.isSynced());
 
-        restTemplate.put("/players/" + player1.getId() +"/rating", 200);
+        restTemplate.put("/players/" + testFixture.player1.getId() +"/rating", 200);
 
         //after update
         waitForEntityChangeEvenToBetPublished();
-        verifyEntityChangeEvent(new Player(789L, "SGS", "GBR", 200, new Club(456L)), "UPDATE");
+        verifyEntityChangeEvent(new Player(789L, "SGS", "GBR", 200, testFixture.club1FromMonolith), "UPDATE");
 
-        playerFromDB = findPlayerById(player1.getId());
-        verifyPlayer(new Player(player1.getId(), "SGS", "GBR", 200, new Club(club1.getId())), playerFromDB);
+        playerFromDB = findPlayerById(testFixture.player1.getId());
+        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "GBR", 200, testFixture.club1), playerFromDB);
         assertTrue(playerFromDB.isSynced());
     }
 
@@ -192,18 +147,18 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseOpera
                 """);
 
         //before update
-        Player playerFromDB = findPlayerById(player1.getId());
-        verifyPlayer(new Player(player1.getId(), "SGS", "TR", 100, new Club(club1.getId())), playerFromDB);
+        Player playerFromDB = findPlayerById(testFixture.player1.getId());
+        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 100, testFixture.club1), playerFromDB);
         assertFalse(playerFromDB.isSynced());
 
-        restTemplate.put("/players/" + player1.getId() + "/transfer", club2.getId());
+        restTemplate.put("/players/" + testFixture.player1.getId() + "/transfer", testFixture.club2.getId());
 
         //after update
         waitForEntityChangeEvenToBetPublished();
         verifyEntityChangeEvent(new Player(789L, "SGS", "GBR", 100, new Club(123L)), "UPDATE");
 
-        playerFromDB = findPlayerById(player1.getId());
-        verifyPlayer(new Player(player1.getId(), "SGS", "GBR", 100, new Club(club2.getId())), playerFromDB);
+        playerFromDB = findPlayerById(testFixture.player1.getId());
+        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "GBR", 100, testFixture.club2), playerFromDB);
         assertTrue(playerFromDB.isSynced());
     }
 

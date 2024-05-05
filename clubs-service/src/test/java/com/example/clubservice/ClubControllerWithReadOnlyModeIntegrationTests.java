@@ -19,79 +19,65 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ClubControllerWithReadOnlyModeIntegrationTests extends BaseOperationModeIntegrationTests {
 
-    private Club club1,club2, club3;
-
     @Override
     protected OperationMode getOperationMode() {
         return OperationMode.READ_ONLY;
-    }
-
-    @BeforeEach
-    public void setUp() {
-        club1 = clubRepository.save(new Club("GS", "TR", "FT"));
-        club2 = clubRepository.save(new Club("BJK", "TR", "FU"));
-        club3 = clubRepository.save(new Club("RM", "ES", "FP"));
     }
 
     @Test
     public void testGetAllClubs() {
         ResponseEntity<List<Club>> response = restTemplate.exchange("/clubs",
                 HttpMethod.GET, null, new ParameterizedTypeReference<List<Club>>() {});
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(3, response.getBody().size());
-        MatcherAssert.assertThat(response.getBody().stream().map(c->c.getId()).collect(Collectors.toList()),
-                Matchers.containsInAnyOrder(club1.getId(), club2.getId(), club3.getId()));
+        verifyGetResponse(response, testFixture.club1FromMonolith, testFixture.club2FromMonolith, testFixture.club3FromMonolith);
     }
 
     @Test
     public void testGetClubsByCountry() {
         ResponseEntity<List<Club>> response = restTemplate.exchange("/clubs/country/ES",
                 HttpMethod.GET, null, new ParameterizedTypeReference<List<Club>>() {});
-        assertEquals(200, response.getStatusCodeValue());
-        assertEquals(1, response.getBody().size());
-        assertEquals(club3.getId(), response.getBody().get(0).getId());
+        verifyGetResponse(response, testFixture.club3FromMonolith);
     }
 
     @Test
     public void testGetClubById() {
-        Club club = restTemplate.getForObject("/clubs/" + club1.getId(), Club.class);
-        assertEquals(club1.getId(), club.getId());
+        ResponseEntity<Club> response = restTemplate.getForEntity("/clubs/" + testFixture.club1FromMonolith.getId(), Club.class);
+        verifyGetResponse(response, testFixture.club1FromMonolith);
     }
 
     @Test
     public void testCreateClub() {
-        Club club = new Club("FB", "TR", "AK");
+        Club club = new Club("RM", "ES", "XX");
 
         registerMonolithResponse("/clubs", "POST", """
                 {
-                    "name": "FB",
-                    "country": "TR",
-                    "president": "AK"
+                    "name": "RM",
+                    "country": "ES",
+                    "president": "XX"
                 }
                 """, 201, """
                 {
-                    "id": 123,
-                    "name": "FB",
-                    "country": "TR",
-                    "president": "AK"
+                    "id": 654,
+                    "name": "RM",
+                    "country": "ES",
+                    "president": "XX"
                 }
                 """);
         Club savedClub = restTemplate.postForObject("/clubs", club, Club.class);
-        verifyClub(club, 123L, savedClub);
+        verifyClub(club, 654L, savedClub);
     }
 
     @Test
     public void testUpdatePresident() {
-        registerMonolithResponse("/clubs/123/president", "PUT", "AY", 200, """
+        registerMonolithResponse("/clubs/321/president", "PUT", "AY", 200, """
                 {
-                    "id": 123,
+                    "id": 321,
                     "name": "FB",
                     "country": "TR",
                     "president": "AY"
                 }
                 """);
-        Club updatedClub = restTemplate.exchange("/clubs/123/president",
+        Club updatedClub = restTemplate.exchange("/clubs/321/president",
                 HttpMethod.PUT, new HttpEntity<String>("AY"), Club.class).getBody();
-        verifyClub(new Club("FB", "TR", "AY"), 123L, updatedClub);
+        verifyClub(new Club("FB", "TR", "AY"), 321L, updatedClub);
     }
 }

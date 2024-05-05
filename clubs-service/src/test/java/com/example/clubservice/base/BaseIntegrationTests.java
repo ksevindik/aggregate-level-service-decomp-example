@@ -1,48 +1,30 @@
 package com.example.clubservice.base;
 
-import com.example.clubservice.migration.EntityChangeEvent;
-import com.example.clubservice.migration.EntityPersistedEvent;
-import com.example.clubservice.migration.OperationMode;
-import com.example.clubservice.migration.OperationModeManager;
 import com.example.clubservice.model.Club;
-import com.example.clubservice.model.IdMapping;
 import com.example.clubservice.model.Player;
 import com.example.clubservice.repository.ClubRepository;
 import com.example.clubservice.repository.IdMappingRepository;
 import com.example.clubservice.repository.PlayerRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import org.h2.tools.Server;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
-import org.springframework.cloud.contract.wiremock.WireMockConfigurationCustomizer;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.datasource.DataSourceUtils;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.web.client.RestTemplate;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -60,12 +42,12 @@ public abstract class BaseIntegrationTests {
     private Long port;
 
     @Autowired
-    protected IdMappingRepository idMappingRepository;
-
-    @Autowired
     private RestTemplateBuilder restTemplateBuilder;
 
     protected RestTemplate restTemplate;
+
+    @Autowired
+    protected ObjectMapper objectMapper;
 
     @Autowired
     protected ClubRepository clubRepository;
@@ -74,7 +56,7 @@ public abstract class BaseIntegrationTests {
     protected PlayerRepository playerRepository;
 
     @Autowired
-    protected ObjectMapper objectMapper;
+    protected IdMappingRepository idMappingRepository;
 
     @BeforeEach
     public void _setUp() {
@@ -83,9 +65,6 @@ public abstract class BaseIntegrationTests {
 
     @AfterEach
     public void _tearDown() {
-        idMappingRepository.deleteAll();
-        playerRepository.deleteAll();
-        clubRepository.deleteAll();
         WireMock.resetToDefault();
     }
 
@@ -93,12 +72,6 @@ public abstract class BaseIntegrationTests {
     static void _beforeAll() {
         // Configure WireMock to have a longer shutdown timeout
         //WireMockSpring.options().jettyStopTimeout(100000L).timeout(100000);
-    }
-
-    protected void createIdMappings(IdMapping... idMappings) {
-        for(IdMapping idMapping : idMappings) {
-            idMappingRepository.save(idMapping);
-        }
     }
 
     protected Player findPlayerById(Long id) {

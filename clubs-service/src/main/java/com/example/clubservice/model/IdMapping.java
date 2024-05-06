@@ -5,6 +5,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
+import java.util.Objects;
+
 /*
 the important point here is both monolithId and serviceId space are mutually exclusive. In other words, any monolithId
 cannot exist in serviceId space, or vice versa. This is a very important to uniquely map any entity across the monolith and the service
@@ -58,5 +61,28 @@ public class IdMapping {
 
     public void setTypeName(String typeName) {
         this.typeName = typeName;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        IdMapping idMapping = (IdMapping) o;
+        return Objects.equals(serviceId, idMapping.serviceId) && Objects.equals(monolithId, idMapping.monolithId) && Objects.equals(typeName, idMapping.typeName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(serviceId, monolithId, typeName);
+    }
+
+    @Override
+    public String toString() {
+        return "IdMapping{" +
+                "id=" + id +
+                ", serviceId=" + serviceId +
+                ", monolithId=" + monolithId +
+                ", typeName='" + typeName + '\'' +
+                '}';
     }
 }

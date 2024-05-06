@@ -156,12 +156,12 @@ public class Player {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Player player = (Player) o;
-        return Objects.equals(id, player.id) && Objects.equals(name, player.name) && Objects.equals(country, player.country) && Objects.equals(rating, player.rating) && Objects.equals(clubId, player.clubId);
+        return Objects.equals(name, player.name) && Objects.equals(country, player.country) && Objects.equals(rating, player.rating) && Objects.equals(clubId, player.clubId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, country, rating, clubId);
+        return Objects.hash(name, country, rating, clubId);
     }
 
     @Override
@@ -172,6 +172,7 @@ public class Player {
                 ", country='" + country + '\'' +
                 ", rating=" + rating +
                 ", clubId=" + clubId +
+                ", synced=" + synced +
                 '}';
     }
 }

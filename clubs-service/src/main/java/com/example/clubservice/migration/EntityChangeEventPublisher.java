@@ -28,7 +28,8 @@ public class EntityChangeEventPublisher {
     @Autowired
     private OperationModeManager operationModeManager;
 
-    private String sourceOrigin = "service";
+    @Autowired
+    private MigrationProperties migrationProperties;
 
     public void publishClubEvent(Club club, String action) {
         /*
@@ -69,9 +70,13 @@ public class EntityChangeEventPublisher {
         if(!operationModeManager.isReadWrite()) return;
         try {
             String entityState = objectMapper.writeValueAsString(entity);
-            EntityChangeEvent event = new EntityChangeEvent(action, entity.getClass().getSimpleName(), sourceOrigin, entityState);
+            EntityChangeEvent event = new EntityChangeEvent(
+                    action,
+                    entity.getClass().getSimpleName(),
+                    migrationProperties.getSourceOrigin(),
+                    entityState);
             String message = objectMapper.writeValueAsString(event);
-            kafkaTemplate.send("entity-change-topic", key.toString(), message).get();
+            kafkaTemplate.send(migrationProperties.getEntityChangeTopic(), key.toString(), message).get();
         } catch (Exception e) {
             throw new RuntimeException("Failed to publish entity change event", e);
         }

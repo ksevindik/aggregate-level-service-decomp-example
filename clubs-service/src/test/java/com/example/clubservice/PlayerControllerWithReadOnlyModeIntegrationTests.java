@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 
 @TestPropertySource(properties = {
-        "monolith.entity-change-event-publisher.enabled=true"
+        "service.test.monolith.entity-change-event-publisher.enabled=true"
 })
 public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperationModeIntegrationTests {
     @Override

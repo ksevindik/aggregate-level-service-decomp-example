@@ -4,25 +4,18 @@ import com.example.clubservice.base.BaseOperationModeIntegrationTests;
 import com.example.clubservice.migration.OperationMode;
 import com.example.clubservice.model.Club;
 import com.example.clubservice.model.IdMapping;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 
 import java.util.List;
-import java.util.stream.Collectors;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 @TestPropertySource(properties = {
-        "monolith.entity-change-event-publisher.enabled=true"
+        "service.test.monolith.entity-change-event-publisher.enabled=true"
 })
 public class ClubControllerWithReadOnlyModeIntegrationTests extends BaseOperationModeIntegrationTests {
 

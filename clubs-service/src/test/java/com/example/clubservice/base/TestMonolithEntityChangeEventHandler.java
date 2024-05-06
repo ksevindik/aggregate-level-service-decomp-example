@@ -1,6 +1,7 @@
 package com.example.clubservice.base;
 
 import com.example.clubservice.migration.EntityChangeEvent;
+import com.example.clubservice.migration.MigrationProperties;
 import com.example.clubservice.utils.MapProxy;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,6 +23,9 @@ public class TestMonolithEntityChangeEventHandler {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private MigrationProperties migrationProperties;
 
     public void reset() {
         latchForChangeEventPublishes = new CountDownLatch(1);
@@ -46,7 +50,7 @@ public class TestMonolithEntityChangeEventHandler {
     public void verifyEntityChangeEvent(Object entity, String operation) {
         try {
             EntityChangeEvent entityChangeEvent = eventMap.get(operation);
-            assertEquals("service", entityChangeEvent.getOrigin());
+            assertEquals(migrationProperties.getSourceOrigin(), entityChangeEvent.getOrigin());
             assertEquals(entity.getClass().getSimpleName(), entityChangeEvent.getType());
             assertEquals(operation, entityChangeEvent.getAction());
             assertEquals(entity, objectMapper.readValue(entityChangeEvent.getEntity(), entity.getClass()));

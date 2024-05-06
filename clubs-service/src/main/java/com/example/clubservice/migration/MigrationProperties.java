@@ -14,6 +14,8 @@ public class MigrationProperties {
     private String targetDbPassword;
     private String monolithBaseUrl;
     private String entityChangeTopic;
+    private String sourceOrigin;
+    private String targetOrigin;
 
     public String getSourceDbUrl() {
         return sourceDbUrl;
@@ -77,5 +79,21 @@ public class MigrationProperties {
 
     public void setEntityChangeTopic(String entityChangeTopic) {
         this.entityChangeTopic = entityChangeTopic;
+    }
+
+    public String getSourceOrigin() {
+        return sourceOrigin;
+    }
+
+    public void setSourceOrigin(String sourceOrigin) {
+        this.sourceOrigin = sourceOrigin;
+    }
+
+    public String getTargetOrigin() {
+        return targetOrigin;
+    }
+
+    public void setTargetOrigin(String targetOrigin) {
+        this.targetOrigin = targetOrigin;
     }
 }

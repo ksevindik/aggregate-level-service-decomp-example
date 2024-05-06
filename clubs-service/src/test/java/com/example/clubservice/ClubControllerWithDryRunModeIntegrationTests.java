@@ -4,18 +4,10 @@ import com.example.clubservice.base.BaseOperationModeIntegrationTests;
 import com.example.clubservice.migration.OperationMode;
 import com.example.clubservice.model.Club;
 import com.example.clubservice.model.IdMapping;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
-import java.util.stream.Collectors;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 
 public class ClubControllerWithDryRunModeIntegrationTests extends BaseOperationModeIntegrationTests {
 

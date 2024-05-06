@@ -5,13 +5,10 @@ import com.example.clubservice.migration.OperationMode;
 import com.example.clubservice.model.Club;
 import com.example.clubservice.model.IdMapping;
 import com.example.clubservice.model.Player;
-import com.github.tomakehurst.wiremock.client.WireMock;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 public class PlayerControllerWithDryRunModeIntegrationTests extends BaseOperationModeIntegrationTests {

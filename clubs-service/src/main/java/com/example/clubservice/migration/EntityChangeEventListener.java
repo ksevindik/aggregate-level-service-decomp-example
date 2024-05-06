@@ -31,7 +31,8 @@ public class EntityChangeEventListener {
     @Autowired
     private OperationModeManager operationModeManager;
 
-    private String targetOrigin = "monolith";
+    @Autowired
+    private MigrationProperties migrationProperties;
 
     @KafkaListener(topics = "${service.migration.entity-change-topic}",groupId = "club-service")
     public void listen(String message) {
@@ -47,7 +48,7 @@ public class EntityChangeEventListener {
             only the messages whose origin is monolith should be processed by the service, other messages with
             the origin service should be ignored.
              */
-            if (targetOrigin.equals(event.getOrigin())) {
+            if (migrationProperties.getTargetOrigin().equals(event.getOrigin())) {
                 switch (event.getType()) {
                     case "Club":
                         processClubEvent(event);

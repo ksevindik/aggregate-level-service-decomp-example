@@ -1,7 +1,7 @@
 package com.example.clubservice.base;
 
 import com.example.clubservice.migration.EntityChangeEvent;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.example.clubservice.migration.MigrationProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.common.FileSource;
 import com.github.tomakehurst.wiremock.extension.Parameters;
@@ -17,13 +17,13 @@ public class TestMonolithEntityChangeEventPublisher extends ResponseTransformer 
 
     private ObjectMapper objectMapper;
 
-    private String topicName;
+    private MigrationProperties migrationProperties;
 
     public TestMonolithEntityChangeEventPublisher(
-            String topicName,
+            MigrationProperties migrationProperties,
             KafkaTemplate<String, String> kafkaTemplate,
             ObjectMapper objectMapper) {
-        this.topicName = topicName;
+        this.migrationProperties = migrationProperties;
         this.kafkaTemplate = kafkaTemplate;
         this.objectMapper = objectMapper;
     }
@@ -57,8 +57,12 @@ public class TestMonolithEntityChangeEventPublisher extends ResponseTransformer 
 
     protected void publishEntityChangeEventFromMonolith(String entity, String type, String operation) {
         try {
-            EntityChangeEvent entityChangeEvent = new EntityChangeEvent(operation, type, "monolith", entity);
-            kafkaTemplate.send(topicName, objectMapper.writeValueAsString(entityChangeEvent)).get();
+            EntityChangeEvent entityChangeEvent = new EntityChangeEvent(
+                    operation,
+                    type,
+                    migrationProperties.getTargetOrigin(),
+                    entity);
+            kafkaTemplate.send(migrationProperties.getEntityChangeTopic(), objectMapper.writeValueAsString(entityChangeEvent)).get();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

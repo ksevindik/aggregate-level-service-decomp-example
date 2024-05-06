@@ -82,4 +82,15 @@ READ_ONLY, READ_WRITE, DRY_RUN.
 
 You can inspect contents of entity-change-topic Kafka topic via the following URL: http://localhost:9001.
 You can inspect contents of sourceDB and targetDB via the following URL: http://localhost:81.
+After accessing the H2 console you can connect to the sourceDB and targetDB by using the following JDBC URLs.
+
+* For source DB `jdbc:h2:tcp://localhost:1521/sourceDB` with username: `sa` and password: <empty>
+* For target DB `jdbc:h2:tcp://localhost:1522/targetDB` with username: `sa` and password: <empty>
+
+You can also inspect the contents of the id_mappings, players and clubs tables by executing the following SQL queries:
+```sql
+select * from id_mappings;
+select * from players;
+select * from clubs;
+```
 

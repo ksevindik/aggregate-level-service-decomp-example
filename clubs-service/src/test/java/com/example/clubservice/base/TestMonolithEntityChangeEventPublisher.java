@@ -1,4 +1,4 @@
-package com.example.clubservice.utils;
+package com.example.clubservice.base;
 
 import com.example.clubservice.migration.EntityChangeEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;

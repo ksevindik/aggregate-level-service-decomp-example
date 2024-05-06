@@ -1,6 +1,5 @@
 package com.example.clubservice.base;
 
-import com.example.clubservice.TestFixture;
 import com.example.clubservice.migration.OperationMode;
 import com.example.clubservice.migration.OperationModeManager;
 import com.example.clubservice.model.Club;
@@ -8,9 +7,6 @@ import com.example.clubservice.model.Player;
 import com.example.clubservice.repository.ClubRepository;
 import com.example.clubservice.repository.IdMappingRepository;
 import com.example.clubservice.repository.PlayerRepository;
-import com.example.clubservice.utils.EventPublishingWireMockConfigurationCustomizer;
-import com.example.clubservice.utils.TestEntityChangeEventHandler;
-import com.example.clubservice.utils.TestEntityPersistEventHandler;
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import org.hamcrest.MatcherAssert;

@@ -1,4 +1,4 @@
-package com.example.clubservice.utils;
+package com.example.clubservice.base;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;

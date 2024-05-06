@@ -1,4 +1,4 @@
-package com.example.clubservice;
+package com.example.clubservice.base;
 
 import com.example.clubservice.model.Club;
 import com.example.clubservice.model.IdMapping;

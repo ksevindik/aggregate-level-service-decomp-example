@@ -17,7 +17,13 @@ public class TestMonolithEntityChangeEventPublisher extends ResponseTransformer 
 
     private ObjectMapper objectMapper;
 
-    public TestMonolithEntityChangeEventPublisher(KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper) {
+    private String topicName;
+
+    public TestMonolithEntityChangeEventPublisher(
+            String topicName,
+            KafkaTemplate<String, String> kafkaTemplate,
+            ObjectMapper objectMapper) {
+        this.topicName = topicName;
         this.kafkaTemplate = kafkaTemplate;
         this.objectMapper = objectMapper;
     }
@@ -52,7 +58,7 @@ public class TestMonolithEntityChangeEventPublisher extends ResponseTransformer 
     protected void publishEntityChangeEventFromMonolith(String entity, String type, String operation) {
         try {
             EntityChangeEvent entityChangeEvent = new EntityChangeEvent(operation, type, "monolith", entity);
-            kafkaTemplate.send("entity-change-topic", objectMapper.writeValueAsString(entityChangeEvent)).get();
+            kafkaTemplate.send(topicName, objectMapper.writeValueAsString(entityChangeEvent)).get();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

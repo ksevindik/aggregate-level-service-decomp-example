@@ -28,7 +28,7 @@ public class TestMonolithEntityChangeEventHandler {
         eventMap.clear();
     }
 
-    @KafkaListener(topics = "entity-change-topic", groupId = "club-service-tests")
+    @KafkaListener(topics = "${service.migration.entity-change-topic}", groupId = "club-service-tests")
     public void handle(String message) throws JsonProcessingException {
         EntityChangeEvent entityChangeEvent = objectMapper.readValue(message, EntityChangeEvent.class);
         eventMap.put(entityChangeEvent.getAction(), entityChangeEvent);

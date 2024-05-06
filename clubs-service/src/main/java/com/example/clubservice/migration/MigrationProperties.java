@@ -13,6 +13,7 @@ public class MigrationProperties {
     private String targetDbUsername;
     private String targetDbPassword;
     private String monolithBaseUrl;
+    private String entityChangeTopic;
 
     public String getSourceDbUrl() {
         return sourceDbUrl;
@@ -68,5 +69,13 @@ public class MigrationProperties {
 
     public void setMonolithBaseUrl(String monolithBaseUrl) {
         this.monolithBaseUrl = monolithBaseUrl;
+    }
+
+    public String getEntityChangeTopic() {
+        return entityChangeTopic;
+    }
+
+    public void setEntityChangeTopic(String entityChangeTopic) {
+        this.entityChangeTopic = entityChangeTopic;
     }
 }

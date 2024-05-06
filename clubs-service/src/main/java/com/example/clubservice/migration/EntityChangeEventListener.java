@@ -33,7 +33,7 @@ public class EntityChangeEventListener {
 
     private String targetOrigin = "monolith";
 
-    @KafkaListener(topics = "entity-change-topic",groupId = "club-service")
+    @KafkaListener(topics = "${service.migration.entity-change-topic}",groupId = "club-service")
     public void listen(String message) {
         try {
             /*

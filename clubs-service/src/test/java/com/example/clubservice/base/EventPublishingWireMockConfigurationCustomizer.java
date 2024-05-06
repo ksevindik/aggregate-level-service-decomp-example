@@ -21,9 +21,12 @@ public class EventPublishingWireMockConfigurationCustomizer implements WireMockC
     @Value("${monolith.entity-change-event-publisher.enabled}")
     private boolean monolithEntityChangeEventPublisherEnabled;
 
+    @Value("${service.migration.entity-change-topic}")
+    private String topicName;
+
     @Override
     public void customize(WireMockConfiguration config) {
         if(monolithEntityChangeEventPublisherEnabled)
-            config.extensions(new TestMonolithEntityChangeEventPublisher(kafkaTemplate, objectMapper));
+            config.extensions(new TestMonolithEntityChangeEventPublisher(topicName,kafkaTemplate, objectMapper));
     }
 }

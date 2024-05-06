@@ -10,8 +10,8 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 /*
-the important point here is NOT to consume the messages whose origin is the same as the monolith itself,
-and NOT to publish a change event in case we handle that event in order not to create an endless change event loop.
+the job of entity change event listener is to consume the entity change events sent from the service side and
+delegate the processing to the entity persister.
  */
 @Component
 public class EntityChangeEventListener {
@@ -28,6 +28,10 @@ public class EntityChangeEventListener {
     public void listen(String message) {
         try {
             EntityChangeEvent event = objectMapper.readValue(message, EntityChangeEvent.class);
+            /*
+            only the messages whose origin is service should be processed by the monolith,
+            other messages with the origin monolith should be ignored.
+             */
             if (targetOrigin.equals(event.getOrigin())) {
                 switch (event.getType()) {
                     case "Club":

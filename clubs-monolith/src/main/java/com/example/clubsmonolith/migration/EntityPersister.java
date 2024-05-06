@@ -10,6 +10,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/*
+the job of entity persister is to reflect changes received as entity change events sent from the service side to the
+monolith DB directly, without triggering any business logic processing.
+ */
 @Component
 @Transactional
 public class EntityPersister {

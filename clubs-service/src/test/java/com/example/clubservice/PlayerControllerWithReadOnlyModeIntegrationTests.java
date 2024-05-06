@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 
@@ -90,34 +92,39 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperat
         entity change event published from the monolith side should be consumed and player should be persisted on the service side
         entity ids should be from the monolith side
          */
-        Player player = new Player("BS", "TR", 100, new Club(456L));
-
         registerMonolithResponse("/players", "POST", """
                 {
-                    "name": "BS",
+                    "name": "RO",
                     "country": "TR",
                     "rating": 100,
                     "clubId": 456
                 }""",201,
                 """
                 {
-                    "id": 123,
-                    "name": "BS",
+                    "id": 222,
+                    "name": "RO",
                     "country": "TR",
                     "rating": 100,
                     "clubId": 456
                 }""");
 
-        IdMapping idMapping = idMappingRepository.findByMonolithIdAndTypeName(123L, "Player");
+        //before create
+        IdMapping idMapping = idMappingRepository.findByMonolithIdAndTypeName(222L, "Player");
         assertNull(idMapping);
 
+        Player player = new Player("RO", "TR", 100, new Club(456L));
         Player savedPlayer = restTemplate.postForObject("/players", player,Player.class);
+
+        //after create
+        verifyPlayer(new Player(222L, "RO", "TR", 100, new Club(456L)), savedPlayer);
 
         waitForEntityPersistedEvent();
 
-        verifyPlayer(new Player(123L, "BS", "TR", 100, new Club(456L)), savedPlayer);
-        idMapping = idMappingRepository.findByMonolithIdAndTypeName(123L, "Player");
-        verifyPlayer(new Player(idMapping.getServiceId(), "BS", "TR", 100, testFixture.club1), playerRepository.findById(idMapping.getServiceId()).get());
+        idMapping = idMappingRepository.findByMonolithIdAndTypeName(222L, "Player");
+        assertNotNull(idMapping);
+
+        Player playerFromDB = playerRepository.findById(idMapping.getServiceId()).get();
+        verifyPlayer(new Player(idMapping.getServiceId(), "RO", "TR", 100, testFixture.club1), playerFromDB);
     }
 
     @Test
@@ -140,6 +147,7 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperat
                     "modified": "2021-07-01T00:00:00"
                 }""" );
 
+        //before update
         verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 100, testFixture.club1),
                 playerRepository.findById(testFixture.player1.getId()).get());
 
@@ -147,9 +155,11 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperat
                 "/players/789/rating",
                 HttpMethod.PUT, new HttpEntity<Integer>(200),Player.class).getBody();
 
+        //after update
+        verifyPlayer(new Player(789L, "SGS", "TR", 200, new Club(456L)), updatedPlayer);
+
         waitForEntityPersistedEvent();
 
-        verifyPlayer(new Player(789L, "SGS", "TR", 200, new Club(456L)), updatedPlayer);
         verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 200, testFixture.club1),
                 playerRepository.findById(testFixture.player1.getId()).get());
     }
@@ -174,6 +184,7 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperat
                     "modified": "2021-07-01T00:00:00"
                 }""");
 
+        //before transfer
         verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 100, testFixture.club1),
                 playerRepository.findById(testFixture.player1.getId()).get());
 
@@ -181,9 +192,11 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperat
                 "/players/789/transfer",
                 HttpMethod.PUT, new HttpEntity<Long>(123L),Player.class).getBody();
 
+        //after transfer
+        verifyPlayer(new Player(789L, "SGS", "TR", 100, new Club(123L)), updatedPlayer);
+
         waitForEntityPersistedEvent();
 
-        verifyPlayer(new Player(789L, "SGS", "TR", 100, new Club(123L)), updatedPlayer);
         verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 100, testFixture.club2),
                 playerRepository.findById(testFixture.player1.getId()).get());
     }

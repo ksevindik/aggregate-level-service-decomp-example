@@ -39,7 +39,7 @@ public class TestMonolithEntityChangeEventPublisher extends ResponseTransformer 
                     action = "DELETE";
                 }
                 String type = request.getUrl().startsWith("/clubs") ? "Club" : "Player";
-                publishEntityChangeEventFromMonolith(response.getBodyAsString(),  type,action);
+                publishEntityChangeEventFromMonolith(response.getBodyAsString(),type,action);
             }
         }
     }
@@ -52,8 +52,8 @@ public class TestMonolithEntityChangeEventPublisher extends ResponseTransformer 
     protected void publishEntityChangeEventFromMonolith(String entity, String type, String operation) {
         try {
             EntityChangeEvent entityChangeEvent = new EntityChangeEvent(operation, type, "monolith", entity);
-            kafkaTemplate.send("entity-change-topic", objectMapper.writeValueAsString(entityChangeEvent));
-        } catch (JsonProcessingException e) {
+            kafkaTemplate.send("entity-change-topic", objectMapper.writeValueAsString(entityChangeEvent)).get();
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

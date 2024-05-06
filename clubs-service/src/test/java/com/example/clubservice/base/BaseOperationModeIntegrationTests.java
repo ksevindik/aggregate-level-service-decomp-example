@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Import(value= {EventPublishingWireMockConfigurationCustomizer.class, TestEntityChangeEventHandler.class, TestEntityPersistEventHandler.class})
+@Import(value= {EventPublishingWireMockConfigurationCustomizer.class, TestMonolithEntityChangeEventHandler.class, TestEntityPersistEventHandler.class})
 public abstract class BaseOperationModeIntegrationTests extends BaseIntegrationTests {
     protected abstract OperationMode getOperationMode();
 
@@ -43,7 +43,7 @@ public abstract class BaseOperationModeIntegrationTests extends BaseIntegrationT
     protected TestFixture testFixture;
 
     @Autowired
-    private TestEntityChangeEventHandler testEntityChangeEventHandler;
+    private TestMonolithEntityChangeEventHandler testMonolithEntityChangeEventHandler;
 
     @Autowired
     private TestEntityPersistEventHandler testEntityPersistEventHandler;
@@ -59,12 +59,12 @@ public abstract class BaseOperationModeIntegrationTests extends BaseIntegrationT
         idMappingRepository.deleteAll();
         playerRepository.deleteAll();
         clubRepository.deleteAll();
-        testEntityChangeEventHandler.reset();
+        testMonolithEntityChangeEventHandler.reset();
         testEntityPersistEventHandler.reset();
     }
 
     protected void waitForEntityChangeEvenToBetPublished() {
-        testEntityChangeEventHandler.waitForEntityChangeEvenToBetPublished();
+        testMonolithEntityChangeEventHandler.waitForEntityChangeEvenToBetPublished();
     }
 
     protected void waitForEntityPersistedEvent() {
@@ -72,7 +72,7 @@ public abstract class BaseOperationModeIntegrationTests extends BaseIntegrationT
     }
 
     protected void verifyEntityChangeEvent(Object entity, String operation) {
-        testEntityChangeEventHandler.verifyEntityChangeEvent(entity, operation);
+        testMonolithEntityChangeEventHandler.verifyEntityChangeEvent(entity, operation);
     }
 
     protected void verifyGetResponse(ResponseEntity<?> response, Object...entities) {

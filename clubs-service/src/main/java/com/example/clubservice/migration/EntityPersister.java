@@ -57,7 +57,7 @@ public class EntityPersister {
         Player servicePlayer = new Player();
         applyChanges(monolithPlayer, servicePlayer);
         servicePlayer = playerRepository.save(servicePlayer);
-        idMappingRepository.save(new IdMapping(servicePlayer.getId(), monolithPlayer.getId(),"Player"));
+        idMappingRepository.save(new IdMapping(servicePlayer.getId(), monolithPlayer.getId(), "Player"));
         applicationEventPublisher.publishEvent(new EntityPersistedEvent(this, servicePlayer));
         return servicePlayer;
     }

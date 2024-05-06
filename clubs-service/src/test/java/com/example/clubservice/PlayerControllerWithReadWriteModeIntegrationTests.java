@@ -77,16 +77,16 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseOpera
         first, player creation should only occur at the service side
         then player change event should be published from the service side as a kafka message to be consumed by the monolith side
          */
-        Player player = new Player("BS", "TR", 100, testFixture.club2);
+        Player player = new Player("RW", "TR", 100, testFixture.club1);
 
         Player savedPlayer = restTemplate.postForObject("/players", player, Player.class);
 
         //after create
         waitForEntityChangeEvenToBetPublished();
-        verifyEntityChangeEvent(new Player(savedPlayer.getId(),"BS","TR",100, new Club(123L)), "CREATE");
+        verifyEntityChangeEvent(new Player(savedPlayer.getId(),"RW","TR",100, new Club(456L)), "CREATE");
 
         Player playerFromDB = findPlayerById(savedPlayer.getId());
-        verifyPlayer(new Player(savedPlayer.getId(),"BS","TR",100, testFixture.club2), playerFromDB);
+        verifyPlayer(new Player(savedPlayer.getId(),"RW","TR",100, testFixture.club1), playerFromDB);
         verifyPlayer(savedPlayer,playerFromDB);
         assertTrue(playerFromDB.isSynced());
     }

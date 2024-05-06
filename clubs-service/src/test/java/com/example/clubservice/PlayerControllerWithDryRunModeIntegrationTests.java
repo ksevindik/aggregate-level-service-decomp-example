@@ -165,7 +165,7 @@ public class PlayerControllerWithDryRunModeIntegrationTests extends BaseOperatio
 
         registerMonolithResponse("/players", "POST", """
                 {
-                    "name": "XXX",
+                    "name": "DR",
                     "country": "TR",
                     "rating": 99,
                     "clubId": 456
@@ -173,19 +173,19 @@ public class PlayerControllerWithDryRunModeIntegrationTests extends BaseOperatio
                 """, 201, """
                 {
                     "id": 111,
-                    "name": "XXX",
+                    "name": "DR",
                     "country": "TR",
                     "rating": 99,
                     "clubId": 456
                 }
                 """);
-        Player player = new Player("XXX", "TR", 99, new Club(456L));
+        Player player = new Player("DR", "TR", 99, new Club(456L));
         Player savedPlayer = restTemplate.postForObject("/players", player, Player.class);
-        verifyPlayer(new Player(111L, "XXX", "TR", 99, new Club(456L)), savedPlayer);
+        verifyPlayer(new Player(111L, "DR", "TR", 99, new Club(456L)), savedPlayer);
 
         IdMapping idMapping = idMappingRepository.findByMonolithIdAndTypeName(111L, "Player");
         Player playerFromDB = playerRepository.findById(idMapping.getServiceId()).orElseThrow();
-        verifyPlayer(new Player(idMapping.getServiceId(), "XXX", "TR", 99, testFixture.club1), playerFromDB);
+        verifyPlayer(new Player(idMapping.getServiceId(), "DR", "TR", 99, testFixture.club1), playerFromDB);
     }
 
     @Test

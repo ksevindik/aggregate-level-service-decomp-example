@@ -1,6 +1,7 @@
 package com.example.clubservice.base;
 
 import com.example.clubservice.migration.EntityChangeEvent;
+import com.example.clubservice.utils.MapProxy;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @TestComponent
-public class TestEntityChangeEventHandler {
+public class TestMonolithEntityChangeEventHandler {
     private CountDownLatch latchForChangeEventPublishes = new CountDownLatch(1);
     private Map<String, EntityChangeEvent> eventMap = MapProxy.createProxy(new HashMap<>());
 

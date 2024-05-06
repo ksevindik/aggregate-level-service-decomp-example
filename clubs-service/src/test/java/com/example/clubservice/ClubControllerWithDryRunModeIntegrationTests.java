@@ -104,28 +104,28 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseOperationM
         entity change events published from the monolith side should be ignored
         no entity change event should be published from the service side at this step
          */
-        Club club = new Club("RM", "ES", "XX");
         registerMonolithResponse("/clubs", "POST", """
                 {
-                    "name": "RM",
+                    "name": "DR",
                     "country": "ES",
                     "president": "XX"
                 }
                 """, 201, """
                 {
-                    "id": 654,
-                    "name": "RM",
+                    "id": 444,
+                    "name": "DR",
                     "country": "ES",
                     "president": "XX"
                 }
                 """);
+        Club club = new Club("DR", "ES", "XX");
         Club savedClub = restTemplate.postForObject("/clubs", club, Club.class);
-        verifyClub(new Club(654L,"RM", "ES", "XX"), savedClub);
+        verifyClub(new Club(444L,"DR", "ES", "XX"), savedClub);
 
-        IdMapping idMapping = idMappingRepository.findByMonolithIdAndTypeName(654L, "Club");
+        IdMapping idMapping = idMappingRepository.findByMonolithIdAndTypeName(444L, "Club");
 
         Club clubFromDB = clubRepository.findById(idMapping.getServiceId()).orElseThrow();
-        verifyClub(new Club(idMapping.getServiceId(),"RM", "ES", "XX"), clubFromDB);
+        verifyClub(new Club(idMapping.getServiceId(),"DR", "ES", "XX"), clubFromDB);
     }
 
     @Test

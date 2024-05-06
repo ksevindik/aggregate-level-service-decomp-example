@@ -3,6 +3,7 @@ package com.example.clubservice;
 import com.example.clubservice.base.BaseOperationModeIntegrationTests;
 import com.example.clubservice.migration.OperationMode;
 import com.example.clubservice.model.Club;
+import com.example.clubservice.model.IdMapping;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,12 +12,18 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.TestPropertySource;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
+@TestPropertySource(properties = {
+        "monolith.entity-change-event-publisher.enabled=true"
+})
 public class ClubControllerWithReadOnlyModeIntegrationTests extends BaseOperationModeIntegrationTests {
 
     @Override
@@ -61,24 +68,37 @@ public class ClubControllerWithReadOnlyModeIntegrationTests extends BaseOperatio
         entity change event published from the monolith side should be consumed and club should be persisted on the service side
         entity ids should be from the monolith side
          */
-        Club club = new Club("RM", "ES", "XX");
-
         registerMonolithResponse("/clubs", "POST", """
                 {
-                    "name": "RM",
+                    "name": "RO",
                     "country": "ES",
                     "president": "XX"
                 }
                 """, 201, """
                 {
-                    "id": 654,
-                    "name": "RM",
+                    "id": 555,
+                    "name": "RO",
                     "country": "ES",
                     "president": "XX"
                 }
                 """);
+
+        //before create
+        IdMapping idMapping = idMappingRepository.findByMonolithIdAndTypeName(654L, "Club");
+        assertNull(idMapping);
+
+        Club club = new Club("RO", "ES", "XX");
         Club savedClub = restTemplate.postForObject("/clubs", club, Club.class);
-        verifyClub(new Club(654L,"RM", "ES", "XX"), savedClub);
+
+        //after create
+        verifyClub(new Club(555L,"RO", "ES", "XX"), savedClub);
+
+        waitForEntityPersistedEvent();
+        idMapping = idMappingRepository.findByMonolithIdAndTypeName(555L, "Club");
+        assertNotNull(idMapping);
+
+        Club clubFromDB = clubRepository.findById(idMapping.getServiceId()).orElse(null);
+        verifyClub(new Club(idMapping.getServiceId(),"RO", "ES", "XX"), clubFromDB);
     }
 
     @Test
@@ -93,11 +113,23 @@ public class ClubControllerWithReadOnlyModeIntegrationTests extends BaseOperatio
                     "id": 321,
                     "name": "FB",
                     "country": "TR",
-                    "president": "AY"
+                    "president": "AY",
+                    "created": "2021-07-01T00:00:00",
+                    "modified": "2021-07-01T00:00:00"
                 }
                 """);
+
+        //before update
+        verifyClub(new Club(testFixture.club3.getId(),"FB", "TR", "AK"), testFixture.club3);
+
         Club updatedClub = restTemplate.exchange("/clubs/321/president",
                 HttpMethod.PUT, new HttpEntity<String>("AY"), Club.class).getBody();
+
+        //after update
         verifyClub(new Club(321L,"FB", "TR", "AY"), updatedClub);
+
+        waitForEntityPersistedEvent();
+        Club clubFromDB = clubRepository.findById(testFixture.club3.getId()).get();
+        verifyClub(new Club(testFixture.club3.getId(),"FB", "TR", "AY"), clubFromDB);
     }
 }

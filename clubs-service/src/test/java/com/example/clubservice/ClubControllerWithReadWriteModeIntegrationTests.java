@@ -55,17 +55,16 @@ public class ClubControllerWithReadWriteModeIntegrationTests extends BaseOperati
         first, club creation should only occur at the service side
         then club change event should be published from the service side as a kafka message to be consumed by the monolith side
          */
-        Club club = new Club("RM", "ES", "XX");
-
+        Club club = new Club("RW", "ES", "XX");
         Club savedClub = restTemplate.postForObject("/clubs", club, Club.class);
 
         //after create
         waitForEntityChangeEvenToBetPublished();
-        verifyEntityChangeEvent(new Club(savedClub.getId(), "RM", "ES", "XX"), "CREATE");
+        verifyEntityChangeEvent(new Club(savedClub.getId(), "RW", "ES", "XX"), "CREATE");
 
         Club clubFromDB = clubRepository.findById(savedClub.getId()).orElseThrow();
 
-        verifyClub(new Club(savedClub.getId(), "RM", "ES", "XX"), savedClub);
+        verifyClub(new Club(savedClub.getId(), "RW", "ES", "XX"), savedClub);
         verifyClub(clubFromDB, savedClub);
         assertTrue(clubFromDB.isSynced());
     }

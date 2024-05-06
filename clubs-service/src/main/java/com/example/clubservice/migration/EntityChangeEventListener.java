@@ -14,6 +14,7 @@ delegate the processing to the entity persister.
 
 we should only consume/process entity change events from the monolith side if the operation mode is read-only,
 otherwise, we should simply discard the message
+TODO: CREATE & DELETE operations in dry-run mode should also be processed in order to build id mappings on the service side
 
 only the messages whose origin is monolith should be processed by the service, other messages with
 the origin service should be ignored.

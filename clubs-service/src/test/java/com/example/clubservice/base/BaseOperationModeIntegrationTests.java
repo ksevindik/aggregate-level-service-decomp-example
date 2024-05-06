@@ -7,10 +7,14 @@ import com.example.clubservice.migration.OperationMode;
 import com.example.clubservice.migration.OperationModeManager;
 import com.example.clubservice.model.Club;
 import com.example.clubservice.model.Player;
+import com.example.clubservice.repository.ClubRepository;
+import com.example.clubservice.repository.IdMappingRepository;
+import com.example.clubservice.repository.PlayerRepository;
 import com.example.clubservice.utils.EventPublishingWireMockConfigurationCustomizer;
 import com.example.clubservice.utils.MapProxy;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -44,6 +48,18 @@ public abstract class BaseOperationModeIntegrationTests extends BaseIntegrationT
 
     @Autowired
     protected OperationModeManager operationModeManager;
+
+    @Autowired
+    protected ObjectMapper objectMapper;
+
+    @Autowired
+    protected ClubRepository clubRepository;
+
+    @Autowired
+    protected PlayerRepository playerRepository;
+
+    @Autowired
+    protected IdMappingRepository idMappingRepository;
 
     @TestConfiguration
     static class BaseTestConfig {
@@ -145,5 +161,39 @@ public abstract class BaseOperationModeIntegrationTests extends BaseIntegrationT
 
     protected ResponseEntity<Club> performGetClubRequest(String url) {
         return restTemplate.getForEntity(url, Club.class);
+    }
+
+    protected Player findPlayerById(Long id) {
+        return playerRepository.findById(id).orElseThrow();
+    }
+
+    protected void verifyClub(Club expected, Club actual) {
+        assertEquals(expected.getId(), actual.getId());
+        assertEquals(expected.getName(), actual.getName());
+        assertEquals(expected.getCountry(), actual.getCountry());
+        assertEquals(expected.getPresident(), actual.getPresident());
+    }
+
+    protected void verifyPlayer(Player expected, Player actual) {
+        assertEquals(expected.getId(), actual.getId());
+        assertEquals(expected.getName(), actual.getName());
+        assertEquals(expected.getCountry(), actual.getCountry());
+        assertEquals(expected.getRating(), actual.getRating());
+        assertEquals(expected.getClubId(), actual.getClubId());
+    }
+
+    protected void registerMonolithResponse(String url, String method, String requestBody, int status, String responseBody) {
+        MappingBuilder mappingBuilder = WireMock.request(method, WireMock.urlEqualTo(url));
+        if(requestBody != null) {
+            if(method.equals("PUT")) {
+                mappingBuilder.withRequestBody(WireMock.equalTo(requestBody));
+            } else {
+                mappingBuilder.withRequestBody(WireMock.equalToJson(requestBody, true, true));
+            }
+        }
+
+        WireMock.stubFor(mappingBuilder.willReturn(WireMock.aResponse().withStatus(status)
+                .withHeader("Content-Type","application/json")
+                .withBody(responseBody)));
     }
 }

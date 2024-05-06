@@ -3,8 +3,11 @@ package com.example.clubservice;
 import com.example.clubservice.base.BaseIntegrationTests;
 import com.example.clubservice.migration.MigrationProperties;
 import com.example.clubservice.migration.OperationMode;
+import com.example.clubservice.repository.ClubRepository;
+import com.example.clubservice.repository.PlayerRepository;
 import jakarta.persistence.EntityManagerFactory;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -24,6 +27,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @TestPropertySource(properties = "spring.datasource.url=${service.migration.source-db-url}")
 public class MigrationControllerIntegrationTests extends BaseIntegrationTests {
+
+    @Autowired
+    private ClubRepository clubRepository;
+
+    @Autowired
+    private PlayerRepository playerRepository;
 
     @TestConfiguration
     static class TestConfig {

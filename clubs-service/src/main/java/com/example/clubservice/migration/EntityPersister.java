@@ -11,6 +11,10 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/*
+the job of entity persister is to reflect changes received as entity change events sent from the monolith side to the
+service DB directly, without triggering any business logic processing.
+ */
 @Component
 @Transactional
 public class EntityPersister {

@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/*
+the job of the migration controller is to provide necessary endpoints to manage the migration process.
+ */
 @RestController
 @RequestMapping("/migrations")
 public class MigrationController {

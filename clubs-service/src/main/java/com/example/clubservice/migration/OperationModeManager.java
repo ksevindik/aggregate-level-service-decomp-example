@@ -1,7 +1,9 @@
 package com.example.clubservice.migration;
 
 import org.springframework.stereotype.Component;
-
+/*
+the job of the operation mode manager is to manage the operation mode of the service.
+ */
 @Component
 public class OperationModeManager {
     private OperationMode operationMode = OperationMode.READ_ONLY;

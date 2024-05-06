@@ -9,8 +9,14 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /*
-the important point here is NOT to consume the messages whose origin is the same as the monolith itself,
-and NOT to publish a change event in case we handle that event in order not to create an endless change event loop.
+the job of entity change event listener is to consume the entity change events sent from the monolith side and
+delegate the processing to the entity persister.
+
+we should only consume/process entity change events from the monolith side if the operation mode is read-only,
+otherwise, we should simply discard the message
+
+only the messages whose origin is monolith should be processed by the service, other messages with
+the origin service should be ignored.
  */
 @Component
 public class EntityChangeEventListener {
@@ -36,6 +42,10 @@ public class EntityChangeEventListener {
             if(!operationModeManager.isReadOnly()) return;
 
             EntityChangeEvent event = objectMapper.readValue(message, EntityChangeEvent.class);
+            /*
+            only the messages whose origin is monolith should be processed by the service, other messages with
+            the origin service should be ignored.
+             */
             if (targetOrigin.equals(event.getOrigin())) {
                 switch (event.getType()) {
                     case "Club":

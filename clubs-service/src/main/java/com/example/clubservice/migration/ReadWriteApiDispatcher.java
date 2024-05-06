@@ -12,7 +12,10 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
-
+/*
+the job of read write api dispatcher is to dispatch the read and write operations to the service layer or the monolith
+according to the current operation mode, while doing necessary id mapping between the monolith and the service, and data syncing etc.
+ */
 @Component
 public class ReadWriteApiDispatcher {
 

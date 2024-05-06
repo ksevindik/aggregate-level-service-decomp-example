@@ -9,6 +9,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
+/*
+the job of entity change event publisher is to publish the entity change events to the kafka topic so that
+the monolith side could handle them. entity change events are published through business logic processing.
+ */
 @Component
 public class EntityChangeEventPublisher {
 

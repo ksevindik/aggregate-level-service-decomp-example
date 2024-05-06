@@ -13,6 +13,9 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
+/*
+the job of monolith read-write api adapter is to provide a convenient way to interact with the monolith side.
+ */
 @Component
 public class MonolithReadWriteApiAdapter {
 

@@ -1,5 +1,13 @@
 package com.example.clubservice.migration;
 
+/*
+entity change events are published by the business processing layer to notify about the changes
+on the entity states so that monolith side could reflect the changes on its own DB.
+action is one of CREATE, UPDATE, DELETE
+type is either Club or Player
+origin is either monolith or service
+entity is the JSON string representation of the entity state
+ */
 public class EntityChangeEvent {
     private String action;
     private String type;

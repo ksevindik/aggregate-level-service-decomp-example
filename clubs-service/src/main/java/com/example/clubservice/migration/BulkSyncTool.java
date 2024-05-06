@@ -10,6 +10,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+/*
+the job of the bulk sync tool is to sync all the data from the monolith side to the service side at the beginning of
+the migration process.
+ */
 @Component
 public class BulkSyncTool {
 

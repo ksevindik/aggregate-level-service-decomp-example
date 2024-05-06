@@ -55,7 +55,7 @@ public class PlayerController {
     }
 
     @PutMapping("/{id}/transfer")
-    public ResponseEntity<Player> transferPlayer(@PathVariable Long id, @RequestParam Long clubId) {
+    public ResponseEntity<Player> transferPlayer(@PathVariable Long id, @RequestBody Long clubId) {
         return ResponseEntity.ok(playerService.transferPlayer(id, clubId));
     }
 }

@@ -22,8 +22,27 @@ public class BulkSyncTool {
 
 
     public void bulkSync() {
+        cleanUpTables();
         syncClubs();
         syncPlayers();
+    }
+
+    private void cleanUpTables() {
+        String query1 = "DELETE FROM clubs;";
+        String query2 = "DELETE FROM players;";
+        String query3 = "DELETE FROM id_mappings;";
+
+        try (Connection targetCon = DriverManager.getConnection(
+                migrationProperties.getTargetDbUrl(),
+                migrationProperties.getTargetDbUsername(),
+                migrationProperties.getTargetDbPassword());
+             Statement stmt = targetCon.createStatement()) {
+            stmt.executeUpdate(query3);
+            stmt.executeUpdate(query2);
+            stmt.executeUpdate(query1);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void syncClubs() {

@@ -2,6 +2,7 @@ package com.example.clubservice;
 
 import com.example.clubservice.base.BaseOperationModeIntegrationTests;
 import com.example.clubservice.migration.OperationMode;
+import com.example.clubservice.model.Club;
 import com.example.clubservice.model.IdMapping;
 import com.example.clubservice.model.Player;
 import com.github.tomakehurst.wiremock.client.WireMock;
@@ -156,84 +157,78 @@ public class PlayerControllerWithDryRunModeIntegrationTests extends BaseOperatio
 
     @Test
     public void testCreatePlayer() {
-        Player player = new Player("XXX", "TR", 99, null);
-        player.setClubId(456L);
+        /*
+        player should be created on the both sides at the same time
+        entity change events published from the monolith side should be ignored
+        no entity change event should be published from the service side at this step
+         */
 
-        WireMock.stubFor(WireMock.post("/players")
-                .willReturn(WireMock.aResponse().withStatus(201)
-                        .withHeader("Content-Type","application/json")
-                        .withBody("""
-                                {
-                                    "id": 111,
-                                    "name": "XXX",
-                                    "country": "TR",
-                                    "rating": 99,
-                                    "clubId": 456
-                                }
-                                """)));
-
+        registerMonolithResponse("/players", "POST", """
+                {
+                    "name": "XXX",
+                    "country": "TR",
+                    "rating": 99,
+                    "clubId": 456
+                }
+                """, 201, """
+                {
+                    "id": 111,
+                    "name": "XXX",
+                    "country": "TR",
+                    "rating": 99,
+                    "clubId": 456
+                }
+                """);
+        Player player = new Player("XXX", "TR", 99, new Club(456L));
         Player savedPlayer = restTemplate.postForObject("/players", player, Player.class);
-
-        assertEquals(111L, savedPlayer.getId());
-        assertEquals("XXX", savedPlayer.getName());
-        assertEquals("TR", savedPlayer.getCountry());
-        assertEquals(99, savedPlayer.getRating());
-        assertEquals(456L, savedPlayer.getClubId());
+        verifyPlayer(new Player(111L, "XXX", "TR", 99, new Club(456L)), savedPlayer);
 
         IdMapping idMapping = idMappingRepository.findByMonolithIdAndTypeName(111L, "Player");
-
         Player playerFromDB = playerRepository.findById(idMapping.getServiceId()).orElseThrow();
-        assertEquals("XXX", playerFromDB.getName());
-        assertEquals("TR", playerFromDB.getCountry());
-        assertEquals(99, playerFromDB.getRating());
-        assertEquals(testFixture.club1.getId(), playerFromDB.getClubId());
+        verifyPlayer(new Player(idMapping.getServiceId(), "XXX", "TR", 99, testFixture.club1), playerFromDB);
     }
 
     @Test
     public void testUpdateRating() {
-        WireMock.stubFor(WireMock.put("/players/789/rating").withRequestBody(WireMock.equalTo("200"))
-                .willReturn(WireMock.aResponse().withStatus(200)
-                        .withHeader("Content-Type","application/json")
-                        .withBody("""
-                                {
-                                    "id": 789,
-                                    "name": "SGS",
-                                    "country": "TR",
-                                    "rating": 200,
-                                    "clubId": 456
-                                }
-                                """)));
+        /*
+        player should be updated on the both sides at the same time
+        entity change events published from the monolith side should be ignored
+        no entity change event should be published from the service side at this step
+         */
+        registerMonolithResponse("/players/789/rating", "PUT", "200", 200, """
+                {
+                    "id": 789,
+                    "name": "SGS",
+                    "country": "TR",
+                    "rating": 200,
+                    "clubId": 456
+                }
+                """);
         restTemplate.put("/players/789/rating", 200);
         Player playerFromDB = playerRepository.findById(testFixture.player1.getId()).orElseThrow();
-
-        assertEquals("SGS", playerFromDB.getName());
-        assertEquals("TR", playerFromDB.getCountry());
-        assertEquals(200, playerFromDB.getRating());
-        assertEquals(testFixture.club1.getId(), playerFromDB.getClubId());
+        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 200, testFixture.club1), playerFromDB);
     }
 
     @Test
     public void testTransferPlayer() {
-        WireMock.stubFor(WireMock.put("/players/789/transfer").withRequestBody(WireMock.equalTo("123"))
-                .willReturn(WireMock.aResponse().withStatus(200)
-                        .withHeader("Content-Type","application/json")
-                        .withBody("""
-                                {
-                                    "id": 789,
-                                    "name": "SGS",
-                                    "country": "TR",
-                                    "rating": 100,
-                                    "clubId": 123
-                                }
-                                """)));
+        /*
+        player should be updated on the both sides at the same time
+        entity change events published from the monolith side should be ignored
+        no entity change event should be published from the service side at this step
+         */
+        registerMonolithResponse("/players/789/transfer", "PUT", "123", 200, """
+                {
+                    "id": 789,
+                    "name": "SGS",
+                    "country": "TR",
+                    "rating": 100,
+                    "clubId": 123
+                }
+                """);
 
         restTemplate.put("/players/789/transfer", 123);
         Player playerFromDB = playerRepository.findById(testFixture.player1.getId()).orElseThrow();
-
-        assertEquals("SGS", playerFromDB.getName());
-        assertEquals("TR", playerFromDB.getCountry());
-        assertEquals(100, playerFromDB.getRating());
-        assertEquals(testFixture.club2.getId(), playerFromDB.getClubId());
+        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 100, testFixture.club2), playerFromDB);
     }
 
 }

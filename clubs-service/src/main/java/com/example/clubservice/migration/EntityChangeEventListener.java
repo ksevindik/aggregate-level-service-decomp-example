@@ -1,9 +1,7 @@
 package com.example.clubservice.migration;
 
 import com.example.clubservice.model.Club;
-import com.example.clubservice.model.IdMapping;
 import com.example.clubservice.model.Player;
-import com.example.clubservice.repository.IdMappingRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -21,9 +19,6 @@ public class EntityChangeEventListener {
     private EntityPersister entityPersister;
 
     @Autowired
-    private IdMappingRepository idMappingRepository;
-
-    @Autowired
     private ObjectMapper objectMapper;
 
     @Autowired
@@ -34,10 +29,13 @@ public class EntityChangeEventListener {
     @KafkaListener(topics = "entity-change-topic",groupId = "club-service")
     public void listen(String message) {
         try {
-            EntityChangeEvent event = objectMapper.readValue(message, EntityChangeEvent.class);
-            //we should discard the change event if operation mode is other than read-only.
+            /*
+            we should only consume/process entity change events from the monolith side if the operation mode is read-only,
+            otherwise, we should simply discard the message
+             */
             if(!operationModeManager.isReadOnly()) return;
 
+            EntityChangeEvent event = objectMapper.readValue(message, EntityChangeEvent.class);
             if (targetOrigin.equals(event.getOrigin())) {
                 switch (event.getType()) {
                     case "Club":
@@ -47,8 +45,7 @@ public class EntityChangeEventListener {
                         processPlayerEvent(event);
                         break;
                     default:
-                        System.out.println("Unsupported entity type :" + event.getType());
-                        break;
+                        throw new IllegalArgumentException("Unsupported entity type :" + event.getType());
                 }
             }
         } catch (Exception e) {
@@ -69,7 +66,7 @@ public class EntityChangeEventListener {
                 entityPersister.deleteFrom(monolithClub);
                 break;
             default:
-                throw new IllegalStateException("Unsupported action for club event handler: " + event.getAction());
+                throw new IllegalArgumentException("Unsupported action for club event handler: " + event.getAction());
         }
     }
 
@@ -86,7 +83,7 @@ public class EntityChangeEventListener {
                 entityPersister.deleteFrom(monolithPlayer);
                 break;
             default:
-                throw new IllegalStateException("Unsupported action for player event handler: " + event.getAction());
+                throw new IllegalArgumentException("Unsupported action for player event handler: " + event.getAction());
         }
     }
 }

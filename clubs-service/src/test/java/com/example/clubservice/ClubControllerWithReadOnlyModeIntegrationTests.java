@@ -26,26 +26,41 @@ public class ClubControllerWithReadOnlyModeIntegrationTests extends BaseOperatio
 
     @Test
     public void testGetAllClubs() {
-        ResponseEntity<List<Club>> response = restTemplate.exchange("/clubs",
-                HttpMethod.GET, null, new ParameterizedTypeReference<List<Club>>() {});
+        /*
+        there should be no interaction with the monolith side
+        all the result should be retrieved from the service side, however entity ids should be of monolith side
+         */
+        ResponseEntity<List<Club>> response = performGetClubsRequest("/clubs");
         verifyGetResponse(response, testFixture.club1FromMonolith, testFixture.club2FromMonolith, testFixture.club3FromMonolith);
     }
 
     @Test
     public void testGetClubsByCountry() {
-        ResponseEntity<List<Club>> response = restTemplate.exchange("/clubs/country/ES",
-                HttpMethod.GET, null, new ParameterizedTypeReference<List<Club>>() {});
+        /*
+        there should be no interaction with the monolith side
+        all the result should be retrieved from the service side, however entity ids should be of monolith side
+         */
+        ResponseEntity<List<Club>> response = performGetClubsRequest("/clubs/country/ES");
         verifyGetResponse(response, testFixture.club2FromMonolith);
     }
 
     @Test
     public void testGetClubById() {
-        ResponseEntity<Club> response = restTemplate.getForEntity("/clubs/" + testFixture.club1FromMonolith.getId(), Club.class);
+        /*
+        there should be no interaction with the monolith side
+        all the result should be retrieved from the service side, however entity ids should be of monolith side
+         */
+        ResponseEntity<Club> response = performGetClubRequest("/clubs/" + testFixture.club1FromMonolith.getId());
         verifyGetResponse(response, testFixture.club1FromMonolith);
     }
 
     @Test
     public void testCreateClub() {
+        /*
+        new club should be created on the monolith side
+        entity change event published from the monolith side should be consumed and club should be persisted on the service side
+        entity ids should be from the monolith side
+         */
         Club club = new Club("RM", "ES", "XX");
 
         registerMonolithResponse("/clubs", "POST", """
@@ -63,11 +78,16 @@ public class ClubControllerWithReadOnlyModeIntegrationTests extends BaseOperatio
                 }
                 """);
         Club savedClub = restTemplate.postForObject("/clubs", club, Club.class);
-        verifyClub(club, 654L, savedClub);
+        verifyClub(new Club(654L,"RM", "ES", "XX"), savedClub);
     }
 
     @Test
     public void testUpdatePresident() {
+        /*
+        club should be updated on the monolith side
+        entity change event published from the monolith side should be consumed and club should be updated on the service side
+        entity ids should be from the monolith side
+         */
         registerMonolithResponse("/clubs/321/president", "PUT", "AY", 200, """
                 {
                     "id": 321,
@@ -78,6 +98,6 @@ public class ClubControllerWithReadOnlyModeIntegrationTests extends BaseOperatio
                 """);
         Club updatedClub = restTemplate.exchange("/clubs/321/president",
                 HttpMethod.PUT, new HttpEntity<String>("AY"), Club.class).getBody();
-        verifyClub(new Club("FB", "TR", "AY"), 321L, updatedClub);
+        verifyClub(new Club(321L,"FB", "TR", "AY"), updatedClub);
     }
 }

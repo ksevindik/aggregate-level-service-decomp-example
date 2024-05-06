@@ -78,7 +78,10 @@ public class ReadWriteApiDispatcher {
     public Club createClub(Club club) {
         return executeCommand(
                 () -> monolithReadWriteApiAdapter.createClub(club),
-                () -> clubService.createClub(club),
+                () -> {
+                    club.setSynced(true);
+                    return clubService.createClub(club);
+                },
                 () -> {
                     Club monolithSavedClub = monolithReadWriteApiAdapter.createClub(club);
                     Club serviceSavedClub = clubService.createClub(club);

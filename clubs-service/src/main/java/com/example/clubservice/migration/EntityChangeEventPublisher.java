@@ -27,6 +27,10 @@ public class EntityChangeEventPublisher {
     private String sourceOrigin = "service";
 
     public void publishClubEvent(Club club, String action) {
+        /*
+         we should translate id of the entity to monolith id before publishing the event
+         however, we need to create a copy of the entity in order to avoid any changes to the original entity
+         */
         club = new Club(club);
         IdMapping idMapping = idMappingRepository.findByServiceIdAndTypeName(club.getId(), "Club");
         if(idMapping != null) {
@@ -36,6 +40,10 @@ public class EntityChangeEventPublisher {
     }
 
     public void publishPlayerEvent(Player player, String action) {
+        /*
+         we should translate id of the entity to monolith id before publishing the event
+         however, we need to create a copy of the entity in order to avoid any changes to the original entity
+         */
         player = new Player(player);
         IdMapping idMappingForPlayer = idMappingRepository.findByServiceIdAndTypeName(player.getId(), "Player");
         if(idMappingForPlayer != null) {
@@ -51,7 +59,9 @@ public class EntityChangeEventPublisher {
     }
 
     private void publish(String action, Object entity, Long key) {
-        //we will not publish any event in read-only or dry-run modes
+        /*
+        we should only publish change events from the service side if the operation mode is read-write
+         */
         if(!operationModeManager.isReadWrite()) return;
         try {
             String entityState = objectMapper.writeValueAsString(entity);
@@ -59,7 +69,6 @@ public class EntityChangeEventPublisher {
             String message = objectMapper.writeValueAsString(event);
             kafkaTemplate.send("entity-change-topic", key.toString(), message).get();
         } catch (Exception e) {
-            // Handle error, could log or throw a custom unchecked exception
             throw new RuntimeException("Failed to publish entity change event", e);
         }
     }

@@ -26,6 +26,9 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseOperationM
 
     @Test
     public void testGetAllClubs() {
+        /*
+        clubs should be retrieved from the monolith side
+         */
         registerMonolithResponse("/clubs", "GET", null, 200, """
                 [
                     {
@@ -48,13 +51,15 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseOperationM
                     }
                 ]
                 """);
-        ResponseEntity<List<Club>> response = restTemplate.exchange("/clubs",
-                HttpMethod.GET, null, new ParameterizedTypeReference<List<Club>>() {});
+        ResponseEntity<List<Club>> response = performGetClubsRequest("/clubs");
         verifyGetResponse(response, testFixture.club1FromMonolith, testFixture.club2FromMonolith, testFixture.club3FromMonolith);
     }
 
     @Test
     public void testGetClubsByCountry() {
+        /*
+        clubs should be retrieved from the monolith side
+         */
         registerMonolithResponse("/clubs/country/TR", "GET", null, 200, """
                 [
                     {
@@ -71,13 +76,15 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseOperationM
                     }
                 ]
                 """);
-        ResponseEntity<List<Club>> response = restTemplate.exchange("/clubs/country/TR",
-                HttpMethod.GET, null, new ParameterizedTypeReference<List<Club>>() {});
+        ResponseEntity<List<Club>> response = performGetClubsRequest("/clubs/country/TR");
         verifyGetResponse(response, testFixture.club1FromMonolith, testFixture.club3FromMonolith);
     }
 
     @Test
     public void testGetClubById() {
+        /*
+        clubs should be retrieved from the monolith side
+         */
         registerMonolithResponse("/clubs/123", "GET", null, 200, """
                     {
                         "id": 123,
@@ -86,12 +93,17 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseOperationM
                         "president": "FU"
                     }
                 """);
-        ResponseEntity<Club> response = restTemplate.getForEntity("/clubs/123", Club.class);
+        ResponseEntity<Club> response = performGetClubRequest("/clubs/123");
         verifyGetResponse(response, testFixture.club2FromMonolith);
     }
 
     @Test
     public void testCreateClub() {
+        /*
+        club should be created on the both sides at the same time
+        entity change events published from the monolith side should be ignored
+        no entity change event should be published from the service side at this step
+         */
         Club club = new Club("RM", "ES", "XX");
         registerMonolithResponse("/clubs", "POST", """
                 {
@@ -108,16 +120,21 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseOperationM
                 }
                 """);
         Club savedClub = restTemplate.postForObject("/clubs", club, Club.class);
-        verifyClub(club, 654L, savedClub);
+        verifyClub(new Club(654L,"RM", "ES", "XX"), savedClub);
 
         IdMapping idMapping = idMappingRepository.findByMonolithIdAndTypeName(654L, "Club");
 
         Club clubFromDB = clubRepository.findById(idMapping.getServiceId()).orElseThrow();
-        verifyClub(new Club("RM", "ES", "XX"), idMapping.getServiceId(), clubFromDB);
+        verifyClub(new Club(idMapping.getServiceId(),"RM", "ES", "XX"), clubFromDB);
     }
 
     @Test
     public void testUpdatePresident() {
+        /*
+        club should be updated on the both sides at the same time
+        entity change events published from the monolith side should be ignored
+        no entity change event should be published from the service side at this step
+         */
         registerMonolithResponse("/clubs/321/president", "PUT", "AY", 200, """
                 {
                     "id": 321,
@@ -129,6 +146,6 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseOperationM
         restTemplate.put("/clubs/321/president", "AY");
 
         Club clubFromDB = clubRepository.findById(testFixture.club3.getId()).orElseThrow();
-        verifyClub(new Club("FB", "TR", "AY"), testFixture.club3.getId(), clubFromDB);
+        verifyClub(new Club(testFixture.club3.getId(), "FB", "TR", "AY"), clubFromDB);
     }
 }

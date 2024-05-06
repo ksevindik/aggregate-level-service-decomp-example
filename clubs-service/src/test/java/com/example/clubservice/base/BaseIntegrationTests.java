@@ -78,8 +78,8 @@ public abstract class BaseIntegrationTests {
         return playerRepository.findById(id).orElseThrow();
     }
 
-    protected void verifyClub(Club expected, Long expectedId, Club actual) {
-        assertEquals(expectedId, actual.getId());
+    protected void verifyClub(Club expected, Club actual) {
+        assertEquals(expected.getId(), actual.getId());
         assertEquals(expected.getName(), actual.getName());
         assertEquals(expected.getCountry(), actual.getCountry());
         assertEquals(expected.getPresident(), actual.getPresident());

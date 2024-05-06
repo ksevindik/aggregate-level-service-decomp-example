@@ -75,7 +75,7 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseOpera
         /*
         as there is no existing player on the service side, there will be no sync call to the monolith side
         first, player creation should only occur at the service side
-        then player change event should be published as a kafka message for the monolith side to consume
+        then player change event should be published from the service side as a kafka message to be consumed by the monolith side
          */
         Player player = new Player("BS", "TR", 100, testFixture.club2);
 

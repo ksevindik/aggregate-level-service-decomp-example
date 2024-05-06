@@ -55,6 +55,11 @@ public class Club {
         this.id = id;
     }
 
+    public Club(Long id, String name, String country, String president) {
+        this(name, country, president);
+        this.id = id;
+    }
+
     public Club(String name, String country, String president) {
         this.name = name;
         this.country = country;

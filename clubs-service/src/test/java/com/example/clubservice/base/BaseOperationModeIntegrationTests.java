@@ -5,6 +5,7 @@ import com.example.clubservice.migration.EntityChangeEvent;
 import com.example.clubservice.migration.EntityPersistedEvent;
 import com.example.clubservice.migration.OperationMode;
 import com.example.clubservice.migration.OperationModeManager;
+import com.example.clubservice.model.Club;
 import com.example.clubservice.model.Player;
 import com.example.clubservice.utils.EventPublishingWireMockConfigurationCustomizer;
 import com.example.clubservice.utils.MapProxy;
@@ -136,5 +137,13 @@ public abstract class BaseOperationModeIntegrationTests extends BaseIntegrationT
 
     protected ResponseEntity<Player> performGetPlayerRequest(String url) {
         return restTemplate.getForEntity(url, Player.class);
+    }
+
+    protected ResponseEntity<List<Club>> performGetClubsRequest(String url) {
+        return restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<List<Club>>() {});
+    }
+
+    protected ResponseEntity<Club> performGetClubRequest(String url) {
+        return restTemplate.getForEntity(url, Club.class);
     }
 }

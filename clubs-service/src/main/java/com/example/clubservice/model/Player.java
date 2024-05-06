@@ -53,7 +53,6 @@ public class Player {
     private boolean synced;
 
     public Player() {
-
     }
 
     public Player(Long id, String name, String country, Integer rating, Club club) {

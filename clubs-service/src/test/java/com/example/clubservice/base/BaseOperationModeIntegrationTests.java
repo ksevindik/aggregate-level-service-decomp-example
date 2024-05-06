@@ -1,8 +1,6 @@
 package com.example.clubservice.base;
 
 import com.example.clubservice.TestFixture;
-import com.example.clubservice.migration.EntityChangeEvent;
-import com.example.clubservice.migration.EntityPersistedEvent;
 import com.example.clubservice.migration.OperationMode;
 import com.example.clubservice.migration.OperationModeManager;
 import com.example.clubservice.model.Club;
@@ -11,46 +9,31 @@ import com.example.clubservice.repository.ClubRepository;
 import com.example.clubservice.repository.IdMappingRepository;
 import com.example.clubservice.repository.PlayerRepository;
 import com.example.clubservice.utils.EventPublishingWireMockConfigurationCustomizer;
-import com.example.clubservice.utils.MapProxy;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.clubservice.utils.TestEntityChangeEventHandler;
+import com.example.clubservice.utils.TestEntityPersistEventHandler;
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.cloud.contract.wiremock.WireMockConfigurationCustomizer;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.transaction.event.TransactionalEventListener;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Import(BaseOperationModeIntegrationTests.BaseTestConfig.class)
+@Import(value= {EventPublishingWireMockConfigurationCustomizer.class, TestEntityChangeEventHandler.class, TestEntityPersistEventHandler.class})
 public abstract class BaseOperationModeIntegrationTests extends BaseIntegrationTests {
     protected abstract OperationMode getOperationMode();
 
     @Autowired
     protected OperationModeManager operationModeManager;
-
-    @Autowired
-    protected ObjectMapper objectMapper;
 
     @Autowired
     protected ClubRepository clubRepository;
@@ -61,26 +44,18 @@ public abstract class BaseOperationModeIntegrationTests extends BaseIntegrationT
     @Autowired
     protected IdMappingRepository idMappingRepository;
 
-    @TestConfiguration
-    static class BaseTestConfig {
-        @Bean
-        public WireMockConfigurationCustomizer wireMockConfigurationCustomizer(KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper)  {
-            return new EventPublishingWireMockConfigurationCustomizer(kafkaTemplate, objectMapper);
-        }
-    }
-
-    private static CountDownLatch latchForChangeEventPublishes = new CountDownLatch(1);
-    private static CountDownLatch latchForEntityPersistedEvents = new CountDownLatch(1);
-    private static Map<String, EntityChangeEvent> eventMap = MapProxy.createProxy(new HashMap<>());
-
     protected TestFixture testFixture;
+
+    @Autowired
+    private TestEntityChangeEventHandler testEntityChangeEventHandler;
+
+    @Autowired
+    private TestEntityPersistEventHandler testEntityPersistEventHandler;
 
     @BeforeEach
     public void __setUp() {
         testFixture = new TestFixture(clubRepository, playerRepository, idMappingRepository);
         operationModeManager.setOperationMode(getOperationMode());
-        latchForChangeEventPublishes = new CountDownLatch(1);
-        latchForEntityPersistedEvents = new CountDownLatch(1);
     }
 
     @AfterEach
@@ -88,51 +63,20 @@ public abstract class BaseOperationModeIntegrationTests extends BaseIntegrationT
         idMappingRepository.deleteAll();
         playerRepository.deleteAll();
         clubRepository.deleteAll();
-    }
-
-    @AfterAll
-    static void __afterAll() {
-        eventMap.clear();
-    }
-
-    @KafkaListener(topics = "entity-change-topic", groupId = "club-service-tests")
-    public void handle(String message) throws JsonProcessingException {
-        EntityChangeEvent entityChangeEvent = objectMapper.readValue(message, EntityChangeEvent.class);
-        eventMap.put(entityChangeEvent.getAction(), entityChangeEvent);
-        latchForChangeEventPublishes.countDown();
-    }
-
-    @TransactionalEventListener
-    public void handle(EntityPersistedEvent event) {
-        latchForEntityPersistedEvents.countDown();
+        testEntityChangeEventHandler.reset();
+        testEntityPersistEventHandler.reset();
     }
 
     protected void waitForEntityChangeEvenToBetPublished() {
-        try {
-            latchForChangeEventPublishes.await(5, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        testEntityChangeEventHandler.waitForEntityChangeEvenToBetPublished();
     }
 
     protected void waitForEntityPersistedEvent() {
-        try {
-            latchForEntityPersistedEvents.await(5, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        testEntityPersistEventHandler.waitForEntityPersistedEvent();
     }
 
     protected void verifyEntityChangeEvent(Object entity, String operation) {
-        try {
-            EntityChangeEvent entityChangeEvent = eventMap.get(operation);
-            assertEquals("service", entityChangeEvent.getOrigin());
-            assertEquals(entity.getClass().getSimpleName(), entityChangeEvent.getType());
-            assertEquals(operation, entityChangeEvent.getAction());
-            assertEquals(entity, objectMapper.readValue(entityChangeEvent.getEntity(), entity.getClass()));
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        testEntityChangeEventHandler.verifyEntityChangeEvent(entity, operation);
     }
 
     protected void verifyGetResponse(ResponseEntity<?> response, Object...entities) {

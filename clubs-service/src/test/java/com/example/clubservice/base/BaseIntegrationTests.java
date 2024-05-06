@@ -3,7 +3,6 @@ package com.example.clubservice.base;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import org.h2.tools.Server;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -45,12 +44,6 @@ public abstract class BaseIntegrationTests {
     @AfterEach
     public void _tearDown() {
         WireMock.resetToDefault();
-    }
-
-    @BeforeAll
-    static void _beforeAll() {
-        // Configure WireMock to have a longer shutdown timeout
-        //WireMockSpring.options().jettyStopTimeout(100000L).timeout(100000);
     }
 
     protected void openDBConsole() {

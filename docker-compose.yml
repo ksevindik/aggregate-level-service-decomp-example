@@ -89,3 +89,13 @@ services:
             - h2
             - kafka
         container_name: clubs-service
+    clubs-service-dynamo:
+        build: clubs-service-dynamo
+        ports:
+            - "8091:8091"
+        environment:
+            - SPRING_PROFILES_ACTIVE=docker
+        depends_on:
+            - provision_dynamo_table
+            - kafka
+        container_name: clubs-service-dynamo

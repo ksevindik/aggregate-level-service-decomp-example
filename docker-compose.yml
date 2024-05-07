@@ -43,6 +43,32 @@ services:
         environment:
             KAFKA_BROKERCONNECT: "kafka:29092"
             JVM_OPTS: "-Xms16M -Xmx48M -Xss180K -XX:-TieredCompilation -XX:+UseStringDeduplication -noverify"
+    dynamo:
+        image: amazon/dynamodb-local
+        ports:
+            - "8000:8000"
+        volumes:
+            - ./dynamodata:/var/dynamofiles
+        command: [ "-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "/var/dynamofiles" ]
+    provision_dynamo_table:
+        image: amazon/aws-cli:2.4.13
+        environment:
+            - AWS_ACCESS_KEY_ID=foo
+            - AWS_SECRET_ACCESS_KEY=bar
+        volumes:
+            - ./dynamodata:/var/dynamofiles
+        command: [ "dynamodb", "create-table", "--endpoint-url", "http://dynamo:8000", "--region", "us-west-2", "--cli-input-yaml", "file:///var/dynamofiles/table_schema.yaml" ]
+        depends_on:
+            - dynamo
+        restart: "no"
+    dynamodb-admin:
+        image: aaronshaf/dynamodb-admin
+        ports:
+            - "8001:8001"
+        environment:
+            - DYNAMO_ENDPOINT=http://dynamo:8000
+        depends_on:
+            - dynamo
     clubs-monolith:
         build: clubs-monolith
         ports:

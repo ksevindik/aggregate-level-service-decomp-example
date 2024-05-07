@@ -1,0 +1,52 @@
+# This schema file is generated with the aws-cli command and is used to create the table schema for your
+# local development instance of dynamo. Make sure it matches the data you want to use in your application and
+# what you entered in the dynamo table UI
+# Don't include any non-key attribute definitions in AttributeDefinitions.
+# AttributeDefinitions field is used for the hash and/or range keys only.
+AttributeDefinitions:  # [REQUIRED] An array of attributes that describe the key schema for the table and indexes.
+- AttributeName: 'PK'  # [REQUIRED] A name for the attribute.
+  AttributeType: S # [REQUIRED] The data type for the attribute, where. Valid values are: S, N, B.
+- AttributeName: 'SK'  # [REQUIRED] A name for the attribute.
+  AttributeType: S # [REQUIRED] The data type for the attribute, where. Valid values are: S, N, B.
+TableName: 'ClubPlayerTable' #Change the name of this table and make sure it matches the config in application.yml
+KeySchema: # [REQUIRED] Specifies the attributes that make up the primary key for a table or an index.
+- AttributeName: 'PK'  # [REQUIRED] The name of a key attribute.
+  KeyType: HASH # [REQUIRED] The role that this key attribute will assume. Valid values are: HASH, RANGE.
+- AttributeName: 'SK'  # [REQUIRED] The name of a key attribute.
+  KeyType: RANGE # [REQUIRED] The role that this key attribute will assume. Valid values are: HASH, RANGE.
+#LocalSecondaryIndexes: # One or more local secondary indexes (the maximum is 5) to be created on the table.
+#- IndexName: ''  # [REQUIRED] The name of the local secondary index.
+#  KeySchema: # [REQUIRED] The complete key schema for the local secondary index, consisting of one or more pairs of attribute names and key types.
+#  - AttributeName: ''  # [REQUIRED] The name of a key attribute.
+#    KeyType: HASH # [REQUIRED] The role that this key attribute will assume. Valid values are: HASH, RANGE.
+#  Projection: # [REQUIRED] Represents attributes that are copied (projected) from the table into the local secondary index.
+#    ProjectionType: KEYS_ONLY  # The set of attributes that are projected into the index. Valid values are: ALL, KEYS_ONLY, INCLUDE.
+#    NonKeyAttributes: # Represents the non-key attribute names which will be projected into the index.
+#    - ''
+#GlobalSecondaryIndexes: # One or more global secondary indexes (the maximum is 20) to be created on the table.
+#- IndexName: ''  # [REQUIRED] The name of the global secondary index.
+#  KeySchema: # [REQUIRED] The complete key schema for a global secondary index, which consists of one or more pairs of attribute names and key types.
+#  - AttributeName: ''  # [REQUIRED] The name of a key attribute.
+#    KeyType: RANGE # [REQUIRED] The role that this key attribute will assume. Valid values are: HASH, RANGE.
+#  Projection: # [REQUIRED] Represents attributes that are copied (projected) from the table into the global secondary index.
+#    ProjectionType: ALL  # The set of attributes that are projected into the index. Valid values are: ALL, KEYS_ONLY, INCLUDE.
+#    NonKeyAttributes: # Represents the non-key attribute names which will be projected into the index.
+#    - ''
+#  ProvisionedThroughput: # Represents the provisioned throughput settings for the specified global secondary index.
+#    ReadCapacityUnits: 0  # [REQUIRED] The maximum number of strongly consistent reads consumed per second before DynamoDB returns a ThrottlingException.
+#    WriteCapacityUnits: 0 # [REQUIRED] The maximum number of writes consumed per second before DynamoDB returns a ThrottlingException.
+BillingMode: PROVISIONED # Controls how you are charged for read and write throughput and how you manage capacity. Valid values are: PROVISIONED, PAY_PER_REQUEST.
+ProvisionedThroughput: # Represents the provisioned throughput settings for a specified table or index.
+  ReadCapacityUnits: 100  # [REQUIRED] The maximum number of strongly consistent reads consumed per second before DynamoDB returns a ThrottlingException.
+  WriteCapacityUnits: 100 # [REQUIRED] The maximum number of writes consumed per second before DynamoDB returns a ThrottlingException.
+StreamSpecification: # The settings for DynamoDB Streams on the table.
+  StreamEnabled: true  # [REQUIRED] Indicates whether DynamoDB Streams is enabled (true) or disabled (false) on the table.
+  StreamViewType: NEW_AND_OLD_IMAGES #  When an item in the table is modified, StreamViewType determines what information is written to the stream for this table. Valid values are: NEW_IMAGE, OLD_IMAGE, NEW_AND_OLD_IMAGES, KEYS_ONLY.
+SSESpecification: # Represents the settings used to enable server-side encryption.
+  Enabled: true  # Indicates whether server-side encryption is done using an Amazon Web Services managed key or an Amazon Web Services owned key.
+  SSEType: KMS # Server-side encryption type. Valid values are: AES256, KMS.
+  KMSMasterKeyId: '' # The KMS key that should be used for the KMS encryption.
+Tags: # A list of key-value pairs to label the table.
+- Key: 'service'  # [REQUIRED] The key of the tag.
+  Value: 'clubs-service-dynamo' # [REQUIRED] The value of the tag.
+TableClass: STANDARD # The table class of the new table. Valid values are: STANDARD, STANDARD_INFREQUENT_ACCESS.

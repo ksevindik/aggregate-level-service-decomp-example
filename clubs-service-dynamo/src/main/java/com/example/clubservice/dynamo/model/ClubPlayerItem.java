@@ -5,6 +5,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
+import com.amazonaws.services.dynamodbv2.document.Item;
 
 import java.sql.Timestamp;
 
@@ -23,12 +24,12 @@ public class ClubPlayerItem {
     private Timestamp created;
     private Timestamp modified;
 
-    // Constructor, getters, and setters
-
     public ClubPlayerItem() {
     }
 
-    public ClubPlayerItem(Long id, Long clubId, String name, String country, String president, Integer rating, Timestamp created, Timestamp modified) {
+    public ClubPlayerItem(Long id, Long clubId, String name,
+                          String country, String president, Integer rating,
+                          Timestamp created, Timestamp modified) {
         this.id = id;
         this.clubId = clubId;
         this.name = name;
@@ -37,8 +38,6 @@ public class ClubPlayerItem {
         this.rating = rating;
         this.created = created;
         this.modified = modified;
-        this.PK = generatePK(id, clubId);
-        this.SK = generateSK(id);
     }
 
     @DynamoDBHashKey(attributeName = "PK")
@@ -77,7 +76,7 @@ public class ClubPlayerItem {
         this.clubId = clubId;
     }
 
-    @DynamoDBAttribute(attributeName = "name")
+    @DynamoDBAttribute(attributeName = "itemName")
     public String getName() {
         return name;
     }
@@ -133,15 +132,62 @@ public class ClubPlayerItem {
         this.modified = modified;
     }
 
-    private String generatePK(Long id, Long clubId) {
-        return "CLUB#" + id;
-    }
-
-    private String generateSK(Long id) {
-        return "PLAYER#" + id;
+    public Item toItem() {
+        Item item = new Item()
+                .withPrimaryKey("PK", PK)
+                .withString("SK", SK)
+                .withLong("id", id)
+                .withString("itemName", name)
+                .withString("country", country)
+                .withNumber("created", created.getTime())
+                .withNumber("modified", modified.getTime());
+        if(clubId != null) {
+            item.withLong("clubId", clubId);
+        }
+        if(rating != null) {
+            item.withNumber("rating", rating);
+        }
+        if(president != null) {
+            item.withString("president", president);
+        }
+        return item;
     }
 
     public Club toClub() {
         return new Club(id, name, country, president, created, modified);
+    }
+
+    public static ClubPlayerItem fromClub(Club club) {
+        ClubPlayerItem item =  new ClubPlayerItem(
+                club.getId(),
+                null,
+                club.getName(),
+                club.getCountry(),
+                club.getPresident(),
+                null,
+                club.getCreated(),
+                club.getModified());
+        item.setPK("CLUB#" + club.getId());
+        item.setSK("CLUB#" + club.getId());
+        return item;
+    }
+
+    public Player toPlayer() {
+        return new Player(id, name, country, rating, created, modified, clubId);
+    }
+
+    public static ClubPlayerItem fromPlayer(Player player) {
+        ClubPlayerItem item = new ClubPlayerItem(
+                player.getId(),
+                player.getClubId(),
+                player.getName(),
+                player.getCountry(),
+                null,
+                player.getRating(),
+                player.getCreated(),
+                player.getModified());
+        item.setPK("CLUB#" + (player.getClubId()!=null?player.getClubId():0));
+        item.setSK("PLAYER#" + player.getId());
+        return item;
     }
 }

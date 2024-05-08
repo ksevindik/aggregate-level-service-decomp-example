@@ -9,7 +9,6 @@ import com.example.clubservice.dynamo.model.ClubPlayerItem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,36 +21,53 @@ public class ClubService {
 
 
     public List<Club> getAllClubs() {
-        Map<String, AttributeValue> expressionAttributeValues = new HashMap<>();
-        expressionAttributeValues.put(":prefix", new AttributeValue().withS("CLUB"));
-
         DynamoDBScanExpression scanExpression = new DynamoDBScanExpression()
                 .withFilterExpression("begins_with(#sk, :prefix)")
-                .withExpressionAttributeValues(expressionAttributeValues)
-                .withExpressionAttributeNames(new HashMap<>() {{
-                    put("#sk", "SK");
-                }});
-        PaginatedScanList<ClubPlayerItem> items = dynamoDBMapper.scan(ClubPlayerItem.class, scanExpression);
-        return items.stream().map(ClubPlayerItem::toClub).toList();
+                .withExpressionAttributeValues(Map.of(":prefix", new AttributeValue().withS("CLUB")))
+                .withExpressionAttributeNames(Map.of("#sk", "SK"));
+        return retrieveClubsWithScanning(scanExpression);
     }
 
     public List<Club> getClubsByCountry(String country) {
-        return List.of();
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression()
+                .withFilterExpression("country = :value")
+                .withExpressionAttributeValues(Map.of(":value", new AttributeValue().withS(country)));
+        return retrieveClubsWithScanning(scanExpression);
     }
 
     public Optional<Club> getClubById(Long id) {
-        return Optional.ofNullable(null);
+        ClubPlayerItem clubPlayerItem = dynamoDBMapper.load(ClubPlayerItem.class, "CLUB#" + id, "CLUB#" + id);
+        if (clubPlayerItem != null) {
+            return Optional.of(clubPlayerItem.toClub());
+        } else {
+            return Optional.empty();
+        }
     }
 
     public List<Club> getClubsByNamePattern(String namePattern) {
-        return List.of();
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
+        return retrieveClubsWithScanning(scanExpression).stream().filter(club -> club.getName().contains(namePattern)).toList();
     }
 
     public Club createClub(Club club) {
+        club.setId(System.currentTimeMillis());
+        dynamoDBMapper.save(ClubPlayerItem.fromClub(club));
         return club;
     }
 
     public Club updatePresident(Long clubId, String president) {
-        return null;
+        ClubPlayerItem clubPlayerItem = dynamoDBMapper.load(ClubPlayerItem.class, "CLUB#" + clubId, "CLUB#" + clubId);
+        if (clubPlayerItem != null) {
+            clubPlayerItem.setPresident(president);
+            dynamoDBMapper.save(clubPlayerItem);
+            return clubPlayerItem.toClub();
+        } else {
+            throw new RuntimeException("Club not found with id :" + clubId);
+        }
+    }
+
+    private List<Club> retrieveClubsWithScanning(DynamoDBScanExpression scanExpression) {
+        PaginatedScanList<ClubPlayerItem> items = dynamoDBMapper.scan(ClubPlayerItem.class, scanExpression);
+        return items.stream().map(ClubPlayerItem::toClub).toList();
     }
 }

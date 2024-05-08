@@ -13,7 +13,9 @@ import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.TableWriteItems;
 import com.amazonaws.services.dynamodbv2.document.spec.PutItemSpec;
+import com.example.clubservice.dynamo.model.Club;
 import com.example.clubservice.dynamo.model.ClubPlayerItem;
+import com.example.clubservice.dynamo.model.Player;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -41,33 +43,31 @@ public class BulkSyncTool {
             ResultSet resultSet = statement.executeQuery("SELECT * FROM clubs");
             List<ClubPlayerItem> clubItems = new ArrayList<>();
             while (resultSet.next()) {
-                ClubPlayerItem club = new ClubPlayerItem(
-                        resultSet.getLong("id"),
+                Club club = new Club(
                         resultSet.getLong("id"),
                         resultSet.getString("name"),
                         resultSet.getString("country"),
                         resultSet.getString("president"),
-                        0,
                         resultSet.getTimestamp("created"),
                         resultSet.getTimestamp("modified")
                 );
-                clubItems.add(club);
+                clubItems.add(ClubPlayerItem.fromClub(club));
             }
 
             resultSet = statement.executeQuery("SELECT * FROM players");
             List<ClubPlayerItem> playerItems = new ArrayList<>();
             while (resultSet.next()) {
-                ClubPlayerItem player = new ClubPlayerItem(
+                Long clubId = resultSet.getLong("club_id");
+                Player player = new Player(
                         resultSet.getLong("id"),
-                        resultSet.getLong("club_id"),
                         resultSet.getString("name"),
                         resultSet.getString("country"),
-                        "",
                         resultSet.getInt("rating"),
                         resultSet.getTimestamp("created"),
-                        resultSet.getTimestamp("modified")
+                        resultSet.getTimestamp("modified"),
+                        clubId!=0?clubId:null
                 );
-                playerItems.add(player);
+                playerItems.add(ClubPlayerItem.fromPlayer(player));
             }
 
             // Initialize DynamoDB client
@@ -76,37 +76,12 @@ public class BulkSyncTool {
             // Write data to DynamoDB
             TableWriteItems clubWriteItems = new TableWriteItems(DYNAMODB_TABLE_NAME);
             for (ClubPlayerItem club : clubItems) {
-                clubWriteItems.addItemToPut(new PutItemSpec()
-                        .withItem(new Item()
-                                .withPrimaryKey("PK", "CLUB#" + club.getId())
-                                .withString("SK", "CLUB#" + club.getId())
-                                .withLong("id", club.getId())
-                                .withString("name", club.getName())
-                                .withString("country", club.getCountry())
-                                .withString("president", club.getPresident())
-                                .withNumber("rating", club.getRating())
-                                .withNumber("created", club.getCreated().getTime())
-                                .withNumber("modified", club.getModified().getTime())
-                        ).getItem()
-                );
+                clubWriteItems.addItemToPut(club.toItem());
             }
 
             TableWriteItems playerWriteItems = new TableWriteItems(DYNAMODB_TABLE_NAME);
             for (ClubPlayerItem player : playerItems) {
-                playerWriteItems.addItemToPut(new PutItemSpec()
-                        .withItem(new Item()
-                                .withPrimaryKey("PK", "CLUB#" + player.getClubId())
-                                .withString("SK", "PLAYER#" + player.getId())
-                                .withLong("id", player.getId())
-                                .withLong("clubId", player.getClubId())
-                                .withString("name", player.getName())
-                                .withString("country", player.getCountry())
-                                .withString("president", player.getPresident())
-                                .withInt("rating", player.getRating())
-                                .withNumber("created", player.getCreated().getTime())
-                                .withNumber("modified", player.getModified().getTime())
-                        ).getItem()
-                );
+                playerWriteItems.addItemToPut(player.toItem());
             }
 
             // Batch write to DynamoDB

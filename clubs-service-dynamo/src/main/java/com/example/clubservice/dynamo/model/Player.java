@@ -19,7 +19,17 @@ public class Player {
     private Timestamp modified;
 
     private Long clubId;
-    
+
+    public Player(Long id, String name, String country, Integer rating, Timestamp created, Timestamp modified, Long clubId) {
+        this.id = id;
+        this.name = name;
+        this.country = country;
+        this.rating = rating;
+        this.created = created;
+        this.modified = modified;
+        this.clubId = clubId;
+    }
+
     // Getters and Setters
     public Long getId() {
         return id;

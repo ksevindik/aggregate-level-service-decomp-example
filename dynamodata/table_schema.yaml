@@ -23,18 +23,20 @@ KeySchema: # [REQUIRED] Specifies the attributes that make up the primary key fo
 #    ProjectionType: KEYS_ONLY  # The set of attributes that are projected into the index. Valid values are: ALL, KEYS_ONLY, INCLUDE.
 #    NonKeyAttributes: # Represents the non-key attribute names which will be projected into the index.
 #    - ''
-#GlobalSecondaryIndexes: # One or more global secondary indexes (the maximum is 20) to be created on the table.
-#- IndexName: ''  # [REQUIRED] The name of the global secondary index.
-#  KeySchema: # [REQUIRED] The complete key schema for a global secondary index, which consists of one or more pairs of attribute names and key types.
-#  - AttributeName: ''  # [REQUIRED] The name of a key attribute.
-#    KeyType: RANGE # [REQUIRED] The role that this key attribute will assume. Valid values are: HASH, RANGE.
-#  Projection: # [REQUIRED] Represents attributes that are copied (projected) from the table into the global secondary index.
-#    ProjectionType: ALL  # The set of attributes that are projected into the index. Valid values are: ALL, KEYS_ONLY, INCLUDE.
+GlobalSecondaryIndexes: # One or more global secondary indexes (the maximum is 20) to be created on the table.
+- IndexName: 'Index_SK'  # [REQUIRED] The name of the global secondary index.
+  KeySchema: # [REQUIRED] The complete key schema for a global secondary index, which consists of one or more pairs of attribute names and key types.
+  - AttributeName: 'PK'  # [REQUIRED] The name of a key attribute.
+    KeyType: HASH # [REQUIRED] The role that this key attribute will assume. Valid values are: HASH, RANGE.
+  - AttributeName: 'SK'  # [REQUIRED] The name of a key attribute.
+    KeyType: RANGE # [REQUIRED] The role that this key attribute will assume. Valid values are: HASH, RANGE.
+  Projection: # [REQUIRED] Represents attributes that are copied (projected) from the table into the global secondary index.
+    ProjectionType: ALL  # The set of attributes that are projected into the index. Valid values are: ALL, KEYS_ONLY, INCLUDE.
 #    NonKeyAttributes: # Represents the non-key attribute names which will be projected into the index.
 #    - ''
-#  ProvisionedThroughput: # Represents the provisioned throughput settings for the specified global secondary index.
-#    ReadCapacityUnits: 0  # [REQUIRED] The maximum number of strongly consistent reads consumed per second before DynamoDB returns a ThrottlingException.
-#    WriteCapacityUnits: 0 # [REQUIRED] The maximum number of writes consumed per second before DynamoDB returns a ThrottlingException.
+  ProvisionedThroughput: # Represents the provisioned throughput settings for the specified global secondary index.
+    ReadCapacityUnits: 1  # [REQUIRED] The maximum number of strongly consistent reads consumed per second before DynamoDB returns a ThrottlingException.
+    WriteCapacityUnits: 1 # [REQUIRED] The maximum number of writes consumed per second before DynamoDB returns a ThrottlingException.
 BillingMode: PROVISIONED # Controls how you are charged for read and write throughput and how you manage capacity. Valid values are: PROVISIONED, PAY_PER_REQUEST.
 ProvisionedThroughput: # Represents the provisioned throughput settings for a specified table or index.
   ReadCapacityUnits: 100  # [REQUIRED] The maximum number of strongly consistent reads consumed per second before DynamoDB returns a ThrottlingException.

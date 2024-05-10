@@ -34,8 +34,11 @@ the following URL: http://localhost:8080
 
 ## The Service Application
 
-**clubs-service** is the decomposed service application. It runs on port 8090. You can access the decomposed service 
+**clubs-service** is the to be decomposed service application. It runs on port 8090. You can access the decomposed service 
 application via the following URL: http://localhost:8090
+
+**clubs-service-dynamodb** is the to be decomposed service application with DynamoDB as the database. It runs on port 8091.
+You can access the decomposed service application via the following URL: http://localhost:8091
 
 ## Bulk Sync Operation
 
@@ -53,7 +56,8 @@ the service application takes the write responsibility to the data model.
 ## Id Mappings
 
 There is an id_mappings table in the monolith and service databases. The id mappings are used to keep track of the ids 
-of the entities in the monolith and the service.
+of the entities in the monolith and the service. For the dynamo db example there is no separate id_mappings table,
+monolithId of each record is kept in the same record in dynamo db.
 
 ## The Service Application Operation Modes
 
@@ -81,6 +85,7 @@ READ_ONLY, READ_WRITE, DRY_RUN.
 ## Accessing the Environment
 
 You can inspect contents of entity-change-topic Kafka topic via the following URL: http://localhost:9001.
+You can inspect contents of DynamoDB via the following URL: http://localhost:8001.
 You can inspect contents of sourceDB and targetDB via the following URL: http://localhost:81.
 After accessing the H2 console you can connect to the sourceDB and targetDB by using the following JDBC URLs.
 

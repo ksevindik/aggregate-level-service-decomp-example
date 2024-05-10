@@ -1,5 +1,6 @@
 package com.example.clubservice.dynamo.controller;
 
+import com.example.clubservice.dynamo.migration.ReadWriteApiDispatcher;
 import com.example.clubservice.dynamo.model.Club;
 import com.example.clubservice.dynamo.service.ClubService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,38 +22,38 @@ import java.util.List;
 public class ClubController {
 
     @Autowired
-    private ClubService clubService;
+    private ReadWriteApiDispatcher readWriteApiDispatcher;
 
     @GetMapping
     public ResponseEntity<List<Club>> getAllClubs() {
-        return ResponseEntity.ok(clubService.getAllClubs());
+        return ResponseEntity.ok(readWriteApiDispatcher.getAllClubs());
     }
 
     @GetMapping("/country/{country}")
     public ResponseEntity<List<Club>> getClubsByCountry(@PathVariable String country) {
-        return ResponseEntity.ok(clubService.getClubsByCountry(country));
+        return ResponseEntity.ok(readWriteApiDispatcher.getClubsByCountry(country));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Club> getClubById(@PathVariable Long id) {
-        return clubService.getClubById(id)
+        return readWriteApiDispatcher.getClubById(id)
                           .map(ResponseEntity::ok)
                           .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/search")
     public ResponseEntity<List<Club>> getClubsByNamePattern(@RequestParam String name) {
-        return ResponseEntity.ok(clubService.getClubsByNamePattern(name));
+        return ResponseEntity.ok(readWriteApiDispatcher.getClubsByNamePattern(name));
     }
 
     @PostMapping
     public ResponseEntity<Club> createClub(@RequestBody Club club) {
-        Club createdClub = clubService.createClub(club);
+        Club createdClub = readWriteApiDispatcher.createClub(club);
         return new ResponseEntity<>(createdClub, HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}/president")
     public ResponseEntity<Club> updatePresident(@PathVariable Long id, @RequestBody String president) {
-        return ResponseEntity.ok(clubService.updatePresident(id, president));
+        return ResponseEntity.ok(readWriteApiDispatcher.updatePresident(id, president));
     }
 }

@@ -51,7 +51,9 @@ public class BulkSyncTool {
                         resultSet.getTimestamp("created"),
                         resultSet.getTimestamp("modified")
                 );
-                clubItems.add(ClubPlayerItem.fromClub(club));
+                ClubPlayerItem item = ClubPlayerItem.fromClub(club);
+                item.setMonolithId(club.getId());
+                clubItems.add(item);
             }
 
             resultSet = statement.executeQuery("SELECT * FROM players");
@@ -67,7 +69,9 @@ public class BulkSyncTool {
                         resultSet.getTimestamp("modified"),
                         clubId!=0?clubId:null
                 );
-                playerItems.add(ClubPlayerItem.fromPlayer(player));
+                ClubPlayerItem item = ClubPlayerItem.fromPlayer(player);
+                item.setMonolithId(player.getId());
+                playerItems.add(item);
             }
 
             // Initialize DynamoDB client

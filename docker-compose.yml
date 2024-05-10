@@ -49,7 +49,7 @@ services:
             - "8000:8000"
         volumes:
             - ./dynamodata:/var/dynamofiles
-        command: [ "-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "/var/dynamofiles" ]
+        command: [ "-jar", "DynamoDBLocal.jar", "-sharedDb" ]
     provision_dynamo_table:
         image: amazon/aws-cli:2.4.13
         environment:
@@ -57,7 +57,7 @@ services:
             - AWS_SECRET_ACCESS_KEY=bar
         volumes:
             - ./dynamodata:/var/dynamofiles
-        command: [ "dynamodb", "create-table", "--endpoint-url", "http://dynamo:8000", "--region", "us-west-2", "--cli-input-yaml", "file:///var/dynamofiles/table_schema.yaml" ]
+        command: [ "dynamodb", "create-table", "--endpoint-url", "http://dynamo:8000", "--region", "my-region", "--cli-input-yaml", "file:///var/dynamofiles/table_schema.yaml" ]
         depends_on:
             - dynamo
         restart: "no"
@@ -89,13 +89,13 @@ services:
             - h2
             - kafka
         container_name: clubs-service
-#    clubs-service-dynamo:
-#        build: clubs-service-dynamo
-#        ports:
-#            - "8091:8091"
-#        environment:
-#            - SPRING_PROFILES_ACTIVE=docker
-#        depends_on:
-#            - provision_dynamo_table
-#            - kafka
-#        container_name: clubs-service-dynamo
+    clubs-service-dynamo:
+        build: clubs-service-dynamo
+        ports:
+            - "8091:8091"
+        environment:
+            - SPRING_PROFILES_ACTIVE=docker
+        depends_on:
+            - provision_dynamo_table
+            - kafka
+        container_name: clubs-service-dynamo

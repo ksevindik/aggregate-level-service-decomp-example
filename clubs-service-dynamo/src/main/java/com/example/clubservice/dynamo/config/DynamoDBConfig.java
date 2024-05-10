@@ -7,6 +7,8 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -17,12 +19,13 @@ public class DynamoDBConfig {
     private String serviceEndpoint;
 
     @Bean
+    @ConditionalOnMissingBean(AmazonDynamoDB.class)
     public AmazonDynamoDB amazonDynamoDB() {
         return AmazonDynamoDBClientBuilder.standard()
                 .withCredentials(new AWSStaticCredentialsProvider(
                         new BasicSessionCredentials("user1","secret1","token1")))
                 .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(
-                        serviceEndpoint, "us-west-2")) // Modify the region as needed
+                        serviceEndpoint, "my-region")) // Modify the region as needed
                 .build();
     }
 

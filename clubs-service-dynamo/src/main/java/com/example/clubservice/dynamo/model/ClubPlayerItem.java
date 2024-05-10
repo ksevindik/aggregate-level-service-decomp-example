@@ -23,6 +23,8 @@ public class ClubPlayerItem {
     private Integer rating;
     private Timestamp created;
     private Timestamp modified;
+    private Long monolithId;
+    private boolean synced;
 
     public ClubPlayerItem() {
     }
@@ -132,6 +134,24 @@ public class ClubPlayerItem {
         this.modified = modified;
     }
 
+    @DynamoDBAttribute(attributeName = "monolithId")
+    public Long getMonolithId() {
+        return monolithId;
+    }
+
+    public void setMonolithId(Long monolithId) {
+        this.monolithId = monolithId;
+    }
+
+    @DynamoDBAttribute(attributeName = "synced")
+    public boolean isSynced() {
+        return synced;
+    }
+
+    public void setSynced(boolean synced) {
+        this.synced = synced;
+    }
+
     public Item toItem() {
         Item item = new Item()
                 .withPrimaryKey("PK", PK)
@@ -149,6 +169,9 @@ public class ClubPlayerItem {
         }
         if(president != null) {
             item.withString("president", president);
+        }
+        if(monolithId!= null) {
+            item.withLong("monolithId", monolithId);
         }
         return item;
     }
@@ -189,5 +212,22 @@ public class ClubPlayerItem {
         item.setPK("CLUB#" + (player.getClubId()!=null?player.getClubId():0));
         item.setSK("PLAYER#" + player.getId());
         return item;
+    }
+
+    @Override
+    public String toString() {
+        return "ClubPlayerItem{" +
+                "PK='" + PK + '\'' +
+                ", SK='" + SK + '\'' +
+                ", id=" + id +
+                ", clubId=" + clubId +
+                ", name='" + name + '\'' +
+                ", country='" + country + '\'' +
+                ", president='" + president + '\'' +
+                ", rating=" + rating +
+                ", created=" + created +
+                ", modified=" + modified +
+                ", monolithId=" + monolithId +
+                '}';
     }
 }

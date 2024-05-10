@@ -20,6 +20,13 @@ public class Player {
 
     private Long clubId;
 
+    public Player() {
+    }
+
+    public Player(Player player) {
+        this(player.getId(), player.getName(), player.getCountry(), player.getRating(), player.getCreated(), player.getModified(), player.getClubId());
+    }
+
     public Player(Long id, String name, String country, Integer rating, Timestamp created, Timestamp modified, Long clubId) {
         this.id = id;
         this.name = name;

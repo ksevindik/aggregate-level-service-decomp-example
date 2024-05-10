@@ -1,0 +1,2 @@
+org.springframework.test.context.ContextCustomizerFactory=\
+  com.example.clubservice.dynamo.base.AmazonDynamoDBEmbeddedContextCustomizerFactory

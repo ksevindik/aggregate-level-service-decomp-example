@@ -51,7 +51,9 @@ public class ClubService {
 
     public Club createClub(Club club) {
         club.setId(System.currentTimeMillis());
-        dynamoDBMapper.save(ClubPlayerItem.fromClub(club));
+        ClubPlayerItem clubPlayerItem = ClubPlayerItem.fromClub(club);
+        clubPlayerItem.setSynced(true);
+        dynamoDBMapper.save(clubPlayerItem);
         return club;
     }
 

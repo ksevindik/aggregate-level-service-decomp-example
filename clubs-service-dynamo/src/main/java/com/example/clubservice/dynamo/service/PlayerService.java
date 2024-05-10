@@ -11,7 +11,6 @@ import com.example.clubservice.dynamo.model.Player;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -88,6 +87,7 @@ public class PlayerService {
     public Player createPlayer(Player player) {
         player.setId(System.currentTimeMillis());
         ClubPlayerItem playerItem = ClubPlayerItem.fromPlayer(player);
+        playerItem.setSynced(true);
         dynamoDBMapper.save(playerItem);
         return player;
     }

@@ -1,6 +1,7 @@
 package com.example.clubservice.dynamo.model;
 
 import java.sql.Timestamp;
+import java.util.Objects;
 
 public class Club {
 
@@ -15,6 +16,13 @@ public class Club {
     private Timestamp created;
 
     private Timestamp modified;
+
+    public Club() {
+    }
+
+    public Club(Club club) {
+        this(club.getId(), club.getName(), club.getCountry(), club.getPresident(), club.getCreated(), club.getModified());
+    }
 
     public Club(Long id, String name, String country, String president, Timestamp created, Timestamp modified) {
         this.id = id;
@@ -70,5 +78,32 @@ public class Club {
 
     public void setModified(Timestamp modified) {
         this.modified = modified;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Club club = (Club) o;
+        return Objects.equals(id, club.id) && Objects.equals(name, club.name) && Objects.equals(country, club.country)
+                && Objects.equals(president, club.president) && Objects.equals(created, club.created)
+                && Objects.equals(modified, club.modified);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, country, president, created, modified);
+    }
+
+    @Override
+    public String toString() {
+        return "Club{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", country='" + country + '\'' +
+                ", president='" + president + '\'' +
+                ", created=" + created +
+                ", modified=" + modified +
+                '}';
     }
 }

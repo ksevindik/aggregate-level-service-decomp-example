@@ -108,13 +108,17 @@ public class EntityPersister {
 
     public void syncClubEntityIfNecessary(Long clubId) {
         ClubPlayerItem item = dynamoDBMapper.load(ClubPlayerItem.class, "CLUB#" + clubId, "CLUB#" + clubId);
-        if(!item.isSynced()) {
+        if(item != null && item.isSynced()) return;
+        if(item == null) {
+            Club club = monolithReadWriteApiAdapter.getClubById(clubId);
+            item = ClubPlayerItem.fromClub(club);
+        } else if(!item.isSynced()) {
             Long monolithClubId = item.getMonolithId();
             Club club = monolithReadWriteApiAdapter.getClubById(monolithClubId);
-            club = club== null ? this.createFrom(club): this.updateFrom(club);
-            item.setSynced(true);
-            dynamoDBMapper.save(item);
+            item.applyChanges(club);
         }
+        item.setSynced(true);
+        dynamoDBMapper.save(item);
     }
 
     public void syncPlayerEntityIfNecessary(Long playerId) {

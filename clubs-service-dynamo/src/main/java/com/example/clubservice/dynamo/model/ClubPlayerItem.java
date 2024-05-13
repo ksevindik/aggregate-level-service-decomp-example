@@ -160,7 +160,8 @@ public class ClubPlayerItem {
                 .withString("itemName", name)
                 .withString("country", country)
                 .withNumber("created", created.getTime())
-                .withNumber("modified", modified.getTime());
+                .withNumber("modified", modified.getTime())
+                .withBoolean("synced", synced);
         if(clubId != null) {
             item.withLong("clubId", clubId);
         }
@@ -177,7 +178,9 @@ public class ClubPlayerItem {
     }
 
     public Club toClub() {
-        return new Club(id, name, country, president, created, modified);
+        Club club = new Club(id, name, country, president, created, modified);
+        club.setSynced(isSynced());
+        return club;
     }
 
     public static ClubPlayerItem fromClub(Club club) {
@@ -192,11 +195,22 @@ public class ClubPlayerItem {
                 club.getModified());
         item.setPK("CLUB#" + club.getId());
         item.setSK("CLUB#" + club.getId());
+        item.setSynced(club.isSynced());
         return item;
     }
 
     public Player toPlayer() {
-        return new Player(id, name, country, rating, created, modified, clubId);
+        Player player = new Player(id, name, country, rating, created, modified, clubId);
+        player.setSynced(isSynced());
+        return player;
+    }
+
+    public void applyChanges(Club monolithClub) {
+        this.setName(monolithClub.getName());
+        this.setCountry(monolithClub.getCountry());
+        this.setPresident(monolithClub.getPresident());
+        this.setCreated(monolithClub.getCreated());
+        this.setModified(monolithClub.getModified());
     }
 
     public static ClubPlayerItem fromPlayer(Player player) {
@@ -211,6 +225,7 @@ public class ClubPlayerItem {
                 player.getModified());
         item.setPK("CLUB#" + (player.getClubId()!=null?player.getClubId():0));
         item.setSK("PLAYER#" + player.getId());
+        item.setSynced(player.isSynced());
         return item;
     }
 
@@ -228,6 +243,7 @@ public class ClubPlayerItem {
                 ", created=" + created +
                 ", modified=" + modified +
                 ", monolithId=" + monolithId +
+                ", synced=" + synced +
                 '}';
     }
 }

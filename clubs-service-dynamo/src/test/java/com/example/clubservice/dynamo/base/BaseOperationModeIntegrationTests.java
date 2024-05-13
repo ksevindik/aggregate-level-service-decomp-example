@@ -38,7 +38,7 @@ public abstract class BaseOperationModeIntegrationTests extends BaseIntegrationT
 
     @BeforeEach
     public void __setUp() {
-        testFixture = new TestFixture();
+        testFixture = new TestFixture(dynamoDBMapper);
         operationModeManager.setOperationMode(getOperationMode());
     }
 

@@ -4,6 +4,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedScanList;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.example.clubservice.dynamo.migration.EntityChangeEventPublisher;
 import com.example.clubservice.dynamo.model.Club;
 import com.example.clubservice.dynamo.model.ClubPlayerItem;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,9 @@ public class ClubService {
 
     @Autowired
     private DynamoDBMapper dynamoDBMapper;
+
+    @Autowired
+    private EntityChangeEventPublisher entityChangeEventPublisher;
 
 
     public List<Club> getAllClubs() {
@@ -54,6 +58,7 @@ public class ClubService {
         ClubPlayerItem clubPlayerItem = ClubPlayerItem.fromClub(club);
         clubPlayerItem.setSynced(true);
         dynamoDBMapper.save(clubPlayerItem);
+        entityChangeEventPublisher.publishClubEvent(clubPlayerItem, "CREATE");
         return club;
     }
 
@@ -62,7 +67,9 @@ public class ClubService {
         if (clubPlayerItem != null) {
             clubPlayerItem.setPresident(president);
             dynamoDBMapper.save(clubPlayerItem);
-            return clubPlayerItem.toClub();
+            Club club = clubPlayerItem.toClub();
+            entityChangeEventPublisher.publishClubEvent(clubPlayerItem, "UPDATE");
+            return club;
         } else {
             throw new RuntimeException("Club not found with id :" + clubId);
         }

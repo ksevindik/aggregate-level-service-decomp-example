@@ -20,11 +20,21 @@ public class Player {
 
     private Long clubId;
 
+    private boolean synced;
+
     public Player() {
     }
 
     public Player(Player player) {
         this(player.getId(), player.getName(), player.getCountry(), player.getRating(), player.getCreated(), player.getModified(), player.getClubId());
+    }
+
+    public Player(String name, String country, Integer rating, Club club) {
+        this(null, name, country, rating, null, null, club.getId());
+    }
+
+    public Player(Long id, String name, String country, Integer rating, Club club) {
+        this(id, name, country, rating, null, null, club!=null?club.getId():null);
     }
 
     public Player(Long id, String name, String country, Integer rating, Timestamp created, Timestamp modified, Long clubId) {
@@ -92,5 +102,13 @@ public class Player {
 
     public void setClubId(Long clubId) {
         this.clubId = clubId;
+    }
+
+    public boolean isSynced() {
+        return synced;
+    }
+
+    public void setSynced(boolean synced) {
+        this.synced = synced;
     }
 }

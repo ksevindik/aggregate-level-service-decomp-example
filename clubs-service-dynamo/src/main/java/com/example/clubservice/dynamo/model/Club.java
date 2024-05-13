@@ -1,5 +1,7 @@
 package com.example.clubservice.dynamo.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.sql.Timestamp;
 import java.util.Objects;
 
@@ -17,11 +19,22 @@ public class Club {
 
     private Timestamp modified;
 
+    private boolean synced;
+
+
     public Club() {
     }
 
     public Club(Club club) {
         this(club.getId(), club.getName(), club.getCountry(), club.getPresident(), club.getCreated(), club.getModified());
+    }
+
+    public Club(String name, String country, String president) {
+        this(null, name, country, president, null, null);
+    }
+
+    public Club(Long id, String name, String country, String president) {
+        this(id, name, country, president, null, null);
     }
 
     public Club(Long id, String name, String country, String president, Timestamp created, Timestamp modified) {
@@ -80,6 +93,15 @@ public class Club {
         this.modified = modified;
     }
 
+
+    public boolean isSynced() {
+        return synced;
+    }
+
+    public void setSynced(boolean synced) {
+        this.synced = synced;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -104,6 +126,7 @@ public class Club {
                 ", president='" + president + '\'' +
                 ", created=" + created +
                 ", modified=" + modified +
+                ", synced=" + synced +
                 '}';
     }
 }

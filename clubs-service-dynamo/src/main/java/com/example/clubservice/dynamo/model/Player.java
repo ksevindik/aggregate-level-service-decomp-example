@@ -3,6 +3,7 @@ package com.example.clubservice.dynamo.model;
 
 
 import java.sql.Timestamp;
+import java.util.Objects;
 
 public class Player {
 
@@ -110,5 +111,32 @@ public class Player {
 
     public void setSynced(boolean synced) {
         this.synced = synced;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Player player = (Player) o;
+        return Objects.equals(id, player.id) && Objects.equals(name, player.name) && Objects.equals(country, player.country) && Objects.equals(rating, player.rating) && Objects.equals(created, player.created) && Objects.equals(modified, player.modified) && Objects.equals(clubId, player.clubId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, country, rating, created, modified, clubId);
+    }
+
+    @Override
+    public String toString() {
+        return "Player{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", country='" + country + '\'' +
+                ", rating=" + rating +
+                ", created=" + created +
+                ", modified=" + modified +
+                ", clubId=" + clubId +
+                ", synced=" + synced +
+                '}';
     }
 }

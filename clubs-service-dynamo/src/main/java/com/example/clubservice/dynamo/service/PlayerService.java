@@ -6,6 +6,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedScanList;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.example.clubservice.dynamo.migration.EntityChangeEventPublisher;
 import com.example.clubservice.dynamo.model.ClubPlayerItem;
 import com.example.clubservice.dynamo.model.Player;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,9 @@ public class PlayerService {
 
     @Autowired
     private DynamoDBMapper dynamoDBMapper;
+
+    @Autowired
+    private EntityChangeEventPublisher entityChangeEventPublisher;
 
 
     public List<Player> getAllPlayers() {
@@ -89,6 +93,7 @@ public class PlayerService {
         ClubPlayerItem playerItem = ClubPlayerItem.fromPlayer(player);
         playerItem.setSynced(true);
         dynamoDBMapper.save(playerItem);
+        entityChangeEventPublisher.publishClubEvent(playerItem, "CREATE");
         return player;
     }
 
@@ -98,6 +103,7 @@ public class PlayerService {
         player.setRating(rating);
         ClubPlayerItem playerItem = ClubPlayerItem.fromPlayer(player);
         dynamoDBMapper.save(playerItem);
+        entityChangeEventPublisher.publishClubEvent(playerItem, "UPDATE");
         return player;
     }
 
@@ -109,6 +115,7 @@ public class PlayerService {
         player.setClubId(clubId);
         playerItem = ClubPlayerItem.fromPlayer(player);
         dynamoDBMapper.save(playerItem);
+        entityChangeEventPublisher.publishClubEvent(playerItem, "UPDATE");
         return player;
     }
 

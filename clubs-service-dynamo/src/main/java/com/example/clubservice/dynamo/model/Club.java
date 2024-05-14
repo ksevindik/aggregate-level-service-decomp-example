@@ -25,6 +25,10 @@ public class Club {
     public Club() {
     }
 
+    public Club(Long id) {
+        setId(id);
+    }
+
     public Club(Club club) {
         this(club.getId(), club.getName(), club.getCountry(), club.getPresident(), club.getCreated(), club.getModified());
     }

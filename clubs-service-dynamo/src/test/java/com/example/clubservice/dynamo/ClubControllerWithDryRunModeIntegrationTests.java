@@ -129,7 +129,7 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseOperationM
         Club savedClub = restTemplate.postForObject("/clubs", club, Club.class);
         verifyClub(new Club(444L,"DR", "ES", "XX"), savedClub);
 
-        Club clubFromDB = findByMonolithId(555L).orElseThrow(()->new IllegalStateException("Club not found with monolith id: 444"));
+        Club clubFromDB = findByMonolithId(444L).orElseThrow(()->new IllegalStateException("Club not found with monolith id: 444"));
         verifyClub(new Club(clubFromDB.getId(),"DR", "ES", "XX"), clubFromDB);
     }
 

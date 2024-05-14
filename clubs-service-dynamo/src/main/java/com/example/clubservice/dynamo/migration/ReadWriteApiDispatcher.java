@@ -111,7 +111,7 @@ public class ReadWriteApiDispatcher {
                     Club monolithSavedClub = monolithReadWriteApiAdapter.createClub(club);
                     Club serviceSavedClub = clubService.createClub(club);
                     ClubPlayerItem item = ClubPlayerItem.fromClub(serviceSavedClub);
-                    item.setMonolithId(serviceSavedClub.getId());
+                    item.setMonolithId(monolithSavedClub.getId());
                     dynamoDBMapper.save(item);
                     return monolithSavedClub;
                 });

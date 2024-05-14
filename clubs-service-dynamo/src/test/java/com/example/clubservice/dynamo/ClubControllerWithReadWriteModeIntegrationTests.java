@@ -125,12 +125,4 @@ public class ClubControllerWithReadWriteModeIntegrationTests extends BaseOperati
         }
         return Optional.of(item.toClub());
     }
-
-    private Timestamp toTimestamp(String date) {
-        try {
-            return new Timestamp(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date).getTime());
-        } catch (ParseException e) {
-            throw new RuntimeException(e);
-        }
-    }
 }

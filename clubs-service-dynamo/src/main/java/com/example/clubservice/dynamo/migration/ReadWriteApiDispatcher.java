@@ -176,7 +176,7 @@ public class ReadWriteApiDispatcher {
     private Player convertToMonolithIds(Player player) {
         if(player == null) return null;
         ClubPlayerItem playerItem = dynamoDBMapper.load(ClubPlayerItem.class,
-                "CLUB#" + (player.getClubId()!=null?player.getClubId():0), "PLAYER#" + player.getId());
+                "PLAYER#" + player.getId(), "PLAYER#" + player.getId());
         Long playerId = playerItem.getMonolithId();
         player.setId(playerId);
         Long clubId = playerItem.getClubId();

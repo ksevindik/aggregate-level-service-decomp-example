@@ -205,12 +205,21 @@ public class ClubPlayerItem {
         return player;
     }
 
-    public void applyChanges(Club monolithClub) {
-        this.setName(monolithClub.getName());
-        this.setCountry(monolithClub.getCountry());
-        this.setPresident(monolithClub.getPresident());
-        this.setCreated(monolithClub.getCreated());
-        this.setModified(monolithClub.getModified());
+    public void applyChanges(Club club) {
+        this.setName(club.getName());
+        this.setCountry(club.getCountry());
+        this.setPresident(club.getPresident());
+        this.setCreated(club.getCreated());
+        this.setModified(club.getModified());
+    }
+
+    public void applyChanges(Player player) {
+        this.setName(player.getName());
+        this.setCountry(player.getCountry());
+        this.setRating(player.getRating());
+        this.setCreated(player.getCreated());
+        this.setModified(player.getModified());
+        this.setClubId(player.getClubId());
     }
 
     public static ClubPlayerItem fromPlayer(Player player) {
@@ -223,7 +232,7 @@ public class ClubPlayerItem {
                 player.getRating(),
                 player.getCreated(),
                 player.getModified());
-        item.setPK("CLUB#" + (player.getClubId()!=null?player.getClubId():0));
+        item.setPK("PLAYER#" + player.getId());
         item.setSK("PLAYER#" + player.getId());
         item.setSynced(player.isSynced());
         return item;

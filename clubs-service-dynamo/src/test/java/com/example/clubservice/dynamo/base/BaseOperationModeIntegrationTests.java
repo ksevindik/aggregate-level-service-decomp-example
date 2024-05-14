@@ -3,6 +3,7 @@ package com.example.clubservice.dynamo.base;
 import com.example.clubservice.dynamo.migration.OperationMode;
 import com.example.clubservice.dynamo.migration.OperationModeManager;
 import com.example.clubservice.dynamo.model.Club;
+import com.example.clubservice.dynamo.model.ClubPlayerItem;
 import com.example.clubservice.dynamo.model.Player;
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
@@ -16,6 +17,9 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 
+import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -89,7 +93,7 @@ public abstract class BaseOperationModeIntegrationTests extends BaseIntegrationT
     }
 
     protected Player findPlayerById(Long id) {
-        throw new UnsupportedOperationException("Not implemented");
+        return dynamoDBMapper.load(ClubPlayerItem.class, "PLAYER#" + id, "PLAYER#" + id).toPlayer();
     }
 
     protected void verifyClub(Club expected, Club actual) {
@@ -120,5 +124,13 @@ public abstract class BaseOperationModeIntegrationTests extends BaseIntegrationT
         WireMock.stubFor(mappingBuilder.willReturn(WireMock.aResponse().withStatus(status)
                 .withHeader("Content-Type","application/json")
                 .withBody(responseBody)));
+    }
+
+    protected Timestamp toTimestamp(String date) {
+        try {
+            return new Timestamp(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").parse(date).getTime());
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

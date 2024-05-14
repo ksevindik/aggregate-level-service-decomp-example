@@ -84,7 +84,7 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseOpera
 
         //after create
         waitForEntityChangeEvenToBetPublished();
-        verifyEntityChangeEvent(new Player(savedPlayer.getId(),"RW","TR",100, testFixture.club1), "CREATE");
+        verifyEntityChangeEvent(new Player(savedPlayer.getId(),"RW","TR",100, testFixture.club1FromMonolith), "CREATE");
 
         Player playerFromDB = findPlayerById(savedPlayer.getId());
         verifyPlayer(new Player(savedPlayer.getId(),"RW","TR",100, testFixture.club1), playerFromDB);
@@ -121,7 +121,10 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseOpera
 
         //after update
         waitForEntityChangeEvenToBetPublished();
-        verifyEntityChangeEvent(new Player(789L, "SGS", "GBR", 200, testFixture.club1FromMonolith), "UPDATE");
+        verifyEntityChangeEvent(new Player(789L, "SGS", "GBR", 200,
+                toTimestamp("2021-07-01T00:00:00"),
+                toTimestamp("2021-07-01T00:00:00"),
+                testFixture.club1FromMonolith.getId()), "UPDATE");
 
         playerFromDB = findPlayerById(testFixture.player1.getId());
         verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "GBR", 200, testFixture.club1), playerFromDB);
@@ -156,7 +159,10 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseOpera
 
         //after update
         waitForEntityChangeEvenToBetPublished();
-        verifyEntityChangeEvent(new Player(testFixture.player1FromMonolith.getId(), "SGS", "GBR", 100, testFixture.club2FromMonolith), "UPDATE");
+        verifyEntityChangeEvent(new Player(testFixture.player1FromMonolith.getId(), "SGS", "GBR", 100,
+                toTimestamp("2021-07-01T00:00:00"),
+                toTimestamp("2021-07-01T00:00:00"),
+                testFixture.club2FromMonolith.getId()), "UPDATE");
 
         playerFromDB = findPlayerById(testFixture.player1.getId());
         verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "GBR", 100, testFixture.club2), playerFromDB);

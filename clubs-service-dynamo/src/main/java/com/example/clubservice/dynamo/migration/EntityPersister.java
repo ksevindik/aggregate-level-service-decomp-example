@@ -122,19 +122,22 @@ public class EntityPersister {
     }
 
     public void syncPlayerEntityIfNecessary(Long playerId) {
-        PaginatedScanList<ClubPlayerItem> items = dynamoDBMapper.scan(ClubPlayerItem.class, new DynamoDBScanExpression()
-                .withFilterExpression("SK = :skValue")
-                .withExpressionAttributeValues(Map.of(
-                        ":skValue", new AttributeValue().withS("PLAYER#"+playerId)))
-        );
-        ClubPlayerItem item = items.get(0);
-        if(!item.isSynced()) {
+        ClubPlayerItem item = dynamoDBMapper.load(ClubPlayerItem.class, "PLAYER#" + playerId, "PLAYER#" + playerId);
+        if(item != null && item.isSynced()) return;
+        if(item == null) {
+            Player player = monolithReadWriteApiAdapter.getPlayerById(playerId);
+            item = ClubPlayerItem.fromPlayer(player);
+        } else if(!item.isSynced()) {
             Long monolithPlayerId = item.getMonolithId();
             Player player = monolithReadWriteApiAdapter.getPlayerById(monolithPlayerId);
-            player = player== null ? this.createFrom(player): this.updateFrom(player);
-            item.setSynced(true);
-            dynamoDBMapper.save(item);
+            if(player.getClubId() != null) {
+                Long clubId = resolveServiceClubId(player.getClubId());
+                player.setClubId(clubId);
+            }
+            item.applyChanges(player);
         }
+        item.setSynced(true);
+        dynamoDBMapper.save(item);
     }
 
 

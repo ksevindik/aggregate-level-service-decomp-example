@@ -28,9 +28,9 @@ public class PlayerService {
 
     public List<Player> getAllPlayers() {
         DynamoDBScanExpression scanExpression = new DynamoDBScanExpression()
-                .withFilterExpression("begins_with(#sk, :prefix)")
+                .withFilterExpression("begins_with(#pk, :prefix)")
                 .withExpressionAttributeValues(Map.of(":prefix", new AttributeValue().withS("PLAYER")))
-                .withExpressionAttributeNames(Map.of("#sk", "SK"));
+                .withExpressionAttributeNames(Map.of("#pk", "PK"));
         return retrievePlayersWithScanning(scanExpression);
     }
 
@@ -47,35 +47,28 @@ public class PlayerService {
         ClubPlayerItem clubItem = dynamoDBMapper.scan(ClubPlayerItem.class, scanExpression).stream().findFirst().orElseThrow();
 
         //second fetch all players associated with the club
-        expressionAttributeValues = Map.of(
-                ":pkValue", new AttributeValue().withS(clubItem.getPK()),
-                ":skPrefix", new AttributeValue().withS("PLAYER"));
-        DynamoDBQueryExpression queryExpression = new DynamoDBQueryExpression<ClubPlayerItem>()
-                .withKeyConditionExpression("PK = :pkValue and begins_with(SK,:skPrefix)")
-                .withExpressionAttributeValues(expressionAttributeValues);
-        PaginatedQueryList<ClubPlayerItem> queryList = dynamoDBMapper.query(ClubPlayerItem.class,queryExpression);
-        return queryList.stream().map(ClubPlayerItem::toPlayer).toList();
+        scanExpression = new DynamoDBScanExpression()
+                .withFilterExpression("begins_with(#pk,:pkPrefix) and #clubId = :clubId")
+                .withExpressionAttributeValues(Map.of(
+                        ":pkPrefix", new AttributeValue().withS("PLAYER"),
+                        ":clubId", new AttributeValue().withN(clubItem.getId().toString())))
+                .withExpressionAttributeNames(Map.of("#pk", "PK", "#clubId", "clubId"));
+        return retrievePlayersWithScanning(scanExpression);
     }
 
 
     public List<Player> getPlayersByCountry(String country) {
         DynamoDBScanExpression scanExpression = new DynamoDBScanExpression()
-                .withFilterExpression("country = :value")
-                .withExpressionAttributeValues(Map.of(":value", new AttributeValue().withS(country)));
+                .withFilterExpression("#country = :value")
+                .withExpressionAttributeValues(Map.of(":value", new AttributeValue().withS(country)))
+                .withExpressionAttributeNames(Map.of("#country", "country"));
         return retrievePlayersWithScanning(scanExpression);
     }
 
 
     public Optional<Player> getPlayerById(Long id) {
-        Map<String, AttributeValue> expressionAttributeValues = Map.of(
-                ":skValue", new AttributeValue().withS("PLAYER#" + id));
-        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression()
-                .withIndexName("Index_SK")
-                .withConsistentRead(false)
-                .withFilterExpression("SK = :skValue")
-                .withExpressionAttributeValues(expressionAttributeValues);
-        List<Player> players = retrievePlayersWithScanning(scanExpression);
-        return players.isEmpty() ? Optional.empty() : Optional.of(players.get(0));
+        ClubPlayerItem playerItem = dynamoDBMapper.load(ClubPlayerItem.class, "PLAYER#" + id, "PLAYER#" + id);
+        return Optional.ofNullable(playerItem).map(ClubPlayerItem::toPlayer);
     }
 
 
@@ -93,30 +86,38 @@ public class PlayerService {
         ClubPlayerItem playerItem = ClubPlayerItem.fromPlayer(player);
         playerItem.setSynced(true);
         dynamoDBMapper.save(playerItem);
-        entityChangeEventPublisher.publishClubEvent(playerItem, "CREATE");
+        entityChangeEventPublisher.publishPlayerEvent(playerItem, "CREATE");
         return player;
     }
 
 
     public Player updatePlayerRating(Long playerId, Integer rating) {
-        Player player = getPlayerById(playerId).orElseThrow(()->new RuntimeException("Player not found with id :" + playerId));
-        player.setRating(rating);
-        ClubPlayerItem playerItem = ClubPlayerItem.fromPlayer(player);
-        dynamoDBMapper.save(playerItem);
-        entityChangeEventPublisher.publishClubEvent(playerItem, "UPDATE");
-        return player;
+        ClubPlayerItem playerItem = dynamoDBMapper.load(ClubPlayerItem.class, "PLAYER#" + playerId, "PLAYER#" + playerId);
+        if(playerItem != null) {
+            playerItem.setRating(rating);
+            dynamoDBMapper.save(playerItem);
+            entityChangeEventPublisher.publishPlayerEvent(playerItem, "UPDATE");
+            return playerItem.toPlayer();
+        } else {
+            throw new RuntimeException("Player not found with id :" + playerId);
+        }
     }
 
 
     public Player transferPlayer(Long playerId, Long clubId) {
-        Player player = getPlayerById(playerId).orElseThrow(()->new RuntimeException("Player not found with id :" + playerId));
-        ClubPlayerItem playerItem = ClubPlayerItem.fromPlayer(player);
-        dynamoDBMapper.delete(playerItem);
-        player.setClubId(clubId);
-        playerItem = ClubPlayerItem.fromPlayer(player);
-        dynamoDBMapper.save(playerItem);
-        entityChangeEventPublisher.publishClubEvent(playerItem, "UPDATE");
-        return player;
+        ClubPlayerItem playerItem = dynamoDBMapper.load(ClubPlayerItem.class, "PLAYER#" + playerId, "PLAYER#" + playerId);
+        if(playerItem != null) {
+            ClubPlayerItem clubItem = dynamoDBMapper.load(ClubPlayerItem.class, "CLUB#" + clubId, "CLUB#" + clubId);
+            if(clubItem == null) {
+                throw new RuntimeException("Club not found with id :" + clubId);
+            }
+            playerItem.setClubId(clubId);
+            dynamoDBMapper.save(playerItem);
+            entityChangeEventPublisher.publishPlayerEvent(playerItem, "UPDATE");
+            return playerItem.toPlayer();
+        } else {
+            throw new RuntimeException("Player not found with id :" + playerId);
+        }
     }
 
     private List<Player> retrievePlayersWithScanning(DynamoDBScanExpression scanExpression) {

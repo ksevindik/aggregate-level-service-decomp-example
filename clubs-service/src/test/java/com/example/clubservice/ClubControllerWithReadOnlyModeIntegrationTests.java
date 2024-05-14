@@ -77,7 +77,7 @@ public class ClubControllerWithReadOnlyModeIntegrationTests extends BaseOperatio
                 """);
 
         //before create
-        IdMapping idMapping = idMappingRepository.findByMonolithIdAndTypeName(654L, "Club");
+        IdMapping idMapping = idMappingRepository.findByMonolithIdAndTypeName(555L, "Club");
         assertNull(idMapping);
 
         Club club = new Club("RO", "ES", "XX");

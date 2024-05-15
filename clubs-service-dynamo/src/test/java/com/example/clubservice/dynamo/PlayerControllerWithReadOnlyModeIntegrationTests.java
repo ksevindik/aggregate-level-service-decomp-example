@@ -117,17 +117,17 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperat
             throw new IllegalStateException("Player should not exist before create with monolith id: 222L");
         });
 
-        Player player = new Player("RO", "TR", 100, new Club(456L));
+        Player player = new Player("RO", "TR", 100, testFixture.club1FromMonolith.getId());
         Player savedPlayer = restTemplate.postForObject("/players", player,Player.class);
 
         //after create
-        verifyPlayer(new Player(222L, "RO", "TR", 100, new Club(456L)), savedPlayer);
+        verifyPlayer(new Player(222L, "RO", "TR", 100, testFixture.club1FromMonolith.getId()), savedPlayer);
 
         waitForEntityPersistedEvent();
 
 
         Player playerFromDB = findPlayerByMonolithId(222L).orElseThrow(()->new IllegalStateException("Player not found with monolith id: " + 222L));
-        verifyPlayer(new Player(playerFromDB.getId(), "RO", "TR", 100, testFixture.club1), playerFromDB);
+        verifyPlayer(new Player(playerFromDB.getId(), "RO", "TR", 100, testFixture.club1.getId()), playerFromDB);
     }
 
     @Test
@@ -151,7 +151,7 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperat
                 }""" );
 
         //before update
-        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 100, testFixture.club1),
+        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 100, testFixture.club1.getId()),
                 findPlayerById(testFixture.player1.getId()));
 
         Player updatedPlayer = restTemplate.exchange(
@@ -159,11 +159,11 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperat
                 HttpMethod.PUT, new HttpEntity<Integer>(200),Player.class).getBody();
 
         //after update
-        verifyPlayer(new Player(789L, "SGS", "TR", 200, new Club(456L)), updatedPlayer);
+        verifyPlayer(new Player(789L, "SGS", "TR", 200, testFixture.club1FromMonolith.getId()), updatedPlayer);
 
         waitForEntityPersistedEvent();
 
-        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 200, testFixture.club1),
+        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 200, testFixture.club1.getId()),
                 findPlayerById(testFixture.player1.getId()));
     }
 
@@ -188,7 +188,7 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperat
                 }""");
 
         //before transfer
-        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 100, testFixture.club1),
+        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 100, testFixture.club1.getId()),
                 findPlayerById(testFixture.player1.getId()));
 
         Player updatedPlayer = restTemplate.exchange(
@@ -196,11 +196,11 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperat
                 HttpMethod.PUT, new HttpEntity<Long>(123L),Player.class).getBody();
 
         //after transfer
-        verifyPlayer(new Player(789L, "SGS", "TR", 100, new Club(123L)), updatedPlayer);
+        verifyPlayer(new Player(789L, "SGS", "TR", 100, testFixture.club2FromMonolith.getId()), updatedPlayer);
 
         waitForEntityPersistedEvent();
 
-        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 100, testFixture.club2),
+        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 100, testFixture.club2.getId()),
                 findPlayerById(testFixture.player1.getId()));
     }
 }

@@ -78,16 +78,16 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseOpera
         first, player creation should only occur at the service side
         then player change event should be published from the service side as a kafka message to be consumed by the monolith side
          */
-        Player player = new Player("RW", "TR", 100, testFixture.club1);
+        Player player = new Player("RW", "TR", 100, testFixture.club1.getId());
 
         Player savedPlayer = restTemplate.postForObject("/players", player, Player.class);
 
         //after create
         waitForEntityChangeEvenToBetPublished();
-        verifyEntityChangeEvent(new Player(savedPlayer.getId(),"RW","TR",100, testFixture.club1FromMonolith), "CREATE");
+        verifyEntityChangeEvent(new Player(savedPlayer.getId(),"RW","TR",100, testFixture.club1FromMonolith.getId()), "CREATE");
 
         Player playerFromDB = findPlayerById(savedPlayer.getId());
-        verifyPlayer(new Player(savedPlayer.getId(),"RW","TR",100, testFixture.club1), playerFromDB);
+        verifyPlayer(new Player(savedPlayer.getId(),"RW","TR",100, testFixture.club1.getId()), playerFromDB);
         verifyPlayer(savedPlayer,playerFromDB);
         assertTrue(playerFromDB.isSynced());
     }
@@ -114,7 +114,7 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseOpera
 
         //before update
         Player playerFromDB = findPlayerById(testFixture.player1.getId());
-        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 100, testFixture.club1), playerFromDB);
+        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 100, testFixture.club1.getId()), playerFromDB);
         assertFalse(playerFromDB.isSynced());
 
         restTemplate.put("/players/" + testFixture.player1.getId() +"/rating", 200);
@@ -127,7 +127,7 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseOpera
                 testFixture.club1FromMonolith.getId()), "UPDATE");
 
         playerFromDB = findPlayerById(testFixture.player1.getId());
-        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "GBR", 200, testFixture.club1), playerFromDB);
+        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "GBR", 200, testFixture.club1.getId()), playerFromDB);
         assertTrue(playerFromDB.isSynced());
     }
 
@@ -152,7 +152,7 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseOpera
 
         //before update
         Player playerFromDB = findPlayerById(testFixture.player1.getId());
-        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 100, testFixture.club1), playerFromDB);
+        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 100, testFixture.club1.getId()), playerFromDB);
         assertFalse(playerFromDB.isSynced());
 
         restTemplate.put("/players/" + testFixture.player1.getId() + "/transfer", testFixture.club2.getId());
@@ -165,7 +165,7 @@ public class PlayerControllerWithReadWriteModeIntegrationTests extends BaseOpera
                 testFixture.club2FromMonolith.getId()), "UPDATE");
 
         playerFromDB = findPlayerById(testFixture.player1.getId());
-        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "GBR", 100, testFixture.club2), playerFromDB);
+        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "GBR", 100, testFixture.club2.getId()), playerFromDB);
         assertTrue(playerFromDB.isSynced());
     }
 

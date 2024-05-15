@@ -30,12 +30,12 @@ public class Player {
         this(player.getId(), player.getName(), player.getCountry(), player.getRating(), player.getCreated(), player.getModified(), player.getClubId());
     }
 
-    public Player(String name, String country, Integer rating, Club club) {
-        this(null, name, country, rating, null, null, club.getId());
+    public Player(String name, String country, Integer rating, Long clubId) {
+        this(null, name, country, rating, null, null, clubId);
     }
 
-    public Player(Long id, String name, String country, Integer rating, Club club) {
-        this(id, name, country, rating, null, null, club!=null?club.getId():null);
+    public Player(Long id, String name, String country, Integer rating, Long clubId) {
+        this(id, name, country, rating, null, null, clubId);
     }
 
     public Player(Long id, String name, String country, Integer rating, Timestamp created, Timestamp modified, Long clubId) {

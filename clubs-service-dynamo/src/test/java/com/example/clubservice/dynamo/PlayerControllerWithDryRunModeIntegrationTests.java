@@ -185,12 +185,12 @@ public class PlayerControllerWithDryRunModeIntegrationTests extends BaseOperatio
         findByMonolithId(111L).ifPresent(c -> {
             throw new IllegalStateException("Player should not exist before create with monolith id: 111");
         });
-        Player player = new Player("DR", "TR", 99, new Club(456L));
+        Player player = new Player("DR", "TR", 99, testFixture.club1FromMonolith.getId());
         Player savedPlayer = restTemplate.postForObject("/players", player, Player.class);
-        verifyPlayer(new Player(111L, "DR", "TR", 99, new Club(456L)), savedPlayer);
+        verifyPlayer(new Player(111L, "DR", "TR", 99, testFixture.club1FromMonolith.getId()), savedPlayer);
 
         Player playerFromDB = findPlayerByMonolithId(111L).orElseThrow(()->new IllegalStateException("Player not found with monolith id: " + 111L));
-        verifyPlayer(new Player(playerFromDB.getId(), "DR", "TR", 99, testFixture.club1), playerFromDB);
+        verifyPlayer(new Player(playerFromDB.getId(), "DR", "TR", 99, testFixture.club1.getId()), playerFromDB);
     }
 
     @Test
@@ -211,7 +211,7 @@ public class PlayerControllerWithDryRunModeIntegrationTests extends BaseOperatio
                 """);
         restTemplate.put("/players/789/rating", 200);
         Player playerFromDB = findPlayerById(testFixture.player1.getId());
-        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 200, testFixture.club1), playerFromDB);
+        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 200, testFixture.club1.getId()), playerFromDB);
     }
 
     @Test
@@ -233,6 +233,6 @@ public class PlayerControllerWithDryRunModeIntegrationTests extends BaseOperatio
 
         restTemplate.put("/players/789/transfer", 123);
         Player playerFromDB = findPlayerById(testFixture.player1.getId());
-        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 100, testFixture.club2), playerFromDB);
+        verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 100, testFixture.club2.getId()), playerFromDB);
     }
 }

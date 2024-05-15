@@ -28,9 +28,9 @@ public class TestFixture {
         club2FromMonolith = new Club(123L, "BJK", "ES", "FU");
         club3FromMonolith = new Club(321L, "FB", "TR", "AK");
 
-        player1FromMonolith = new Player(789L,"SGS", "TR", 100, club1FromMonolith);
-        player2FromMonolith = new Player(790L,"SYS", "TR", 90, club1FromMonolith);
-        player3FromMonolith = new Player(780L,"HS", "US", 80, club2FromMonolith);
+        player1FromMonolith = new Player(789L,"SGS", "TR", 100, club1FromMonolith.getId());
+        player2FromMonolith = new Player(790L,"SYS", "TR", 90, club1FromMonolith.getId());
+        player3FromMonolith = new Player(780L,"HS", "US", 80, club2FromMonolith.getId());
         player4FromMonolith = new Player(770L,"KS", "DE", 70, null);
 
         //service side
@@ -50,9 +50,9 @@ public class TestFixture {
         club2 = clubItem2.toClub();
         club3 = clubItem3.toClub();
 
-        player1 = new Player(4444L, "SGS", "TR", 100, club1);
-        player2 = new Player(5555L, "SYS", "TR", 90, club1);
-        player3 = new Player(6666L, "HS", "US", 80, club2);
+        player1 = new Player(4444L, "SGS", "TR", 100, club1.getId());
+        player2 = new Player(5555L, "SYS", "TR", 90, club1.getId());
+        player3 = new Player(6666L, "HS", "US", 80, club2.getId());
         player4 = new Player(7777L, "KS", "DE", 70, null);
 
         ClubPlayerItem playerItem1 = ClubPlayerItem.fromPlayer(player1);

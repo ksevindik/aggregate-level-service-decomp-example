@@ -126,7 +126,7 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperat
         waitForEntityPersistedEvent();
 
 
-        Player playerFromDB = findByMonolithId(222L).orElseThrow(()->new IllegalStateException("Player not found with monolith id: " + 222L));
+        Player playerFromDB = findPlayerByMonolithId(222L).orElseThrow(()->new IllegalStateException("Player not found with monolith id: " + 222L));
         verifyPlayer(new Player(playerFromDB.getId(), "RO", "TR", 100, testFixture.club1), playerFromDB);
     }
 
@@ -203,21 +203,4 @@ public class PlayerControllerWithReadOnlyModeIntegrationTests extends BaseOperat
         verifyPlayer(new Player(testFixture.player1.getId(), "SGS", "TR", 100, testFixture.club2),
                 findPlayerById(testFixture.player1.getId()));
     }
-
-    private Optional<Player> findByMonolithId(Long id) {
-        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
-        scanExpression.withFilterExpression("#monolithId = :val1 and begins_with(#sk, :skPrefix)")
-                .withExpressionAttributeValues(Map.of(
-                        ":val1", new AttributeValue().withN(id.toString()),
-                        ":skPrefix", new AttributeValue().withS("PLAYER#")))
-                .withExpressionAttributeNames(Map.of("#sk", "SK", "#monolithId", "monolithId"));
-        List<ClubPlayerItem> items = dynamoDBMapper.scan(ClubPlayerItem.class, scanExpression);
-        if(items.isEmpty()) {
-            return Optional.empty();
-        } else if(items.size()>1) {
-            throw new IllegalStateException("Multiple players found with monolith id: " + id);
-        }
-        return Optional.of(items.get(0).toPlayer());
-    }
-
 }

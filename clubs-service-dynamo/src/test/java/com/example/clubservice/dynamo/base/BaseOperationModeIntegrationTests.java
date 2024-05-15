@@ -1,5 +1,7 @@
 package com.example.clubservice.dynamo.base;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.example.clubservice.dynamo.migration.OperationMode;
 import com.example.clubservice.dynamo.migration.OperationModeManager;
 import com.example.clubservice.dynamo.model.Club;
@@ -21,6 +23,8 @@ import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -132,5 +136,45 @@ public abstract class BaseOperationModeIntegrationTests extends BaseIntegrationT
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    protected Optional<Club> findById(Long id) {
+        ClubPlayerItem item = dynamoDBMapper.load(ClubPlayerItem.class, "CLUB#" + id, "CLUB#" + id);
+        if(item == null) {
+            return Optional.empty();
+        }
+        return Optional.of(item.toClub());
+    }
+
+    protected Optional<Club> findByMonolithId(Long id) {
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
+        scanExpression.withFilterExpression("#monolithId = :val1 and begins_with(#sk, :skPrefix)")
+                .withExpressionAttributeValues(Map.of(
+                        ":val1", new AttributeValue().withN(id.toString()),
+                        ":skPrefix", new AttributeValue().withS("CLUB#")))
+                .withExpressionAttributeNames(Map.of("#sk", "SK", "#monolithId", "monolithId"));
+        List<ClubPlayerItem> items = dynamoDBMapper.scan(ClubPlayerItem.class, scanExpression);
+        if(items.isEmpty()) {
+            return Optional.empty();
+        } else if(items.size()>1) {
+            throw new IllegalStateException("Multiple clubs found with monolith id: " + id);
+        }
+        return Optional.of(items.get(0).toClub());
+    }
+
+    protected Optional<Player> findPlayerByMonolithId(Long id) {
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
+        scanExpression.withFilterExpression("#monolithId = :val1 and begins_with(#sk, :skPrefix)")
+                .withExpressionAttributeValues(Map.of(
+                        ":val1", new AttributeValue().withN(id.toString()),
+                        ":skPrefix", new AttributeValue().withS("PLAYER#")))
+                .withExpressionAttributeNames(Map.of("#sk", "SK", "#monolithId", "monolithId"));
+        List<ClubPlayerItem> items = dynamoDBMapper.scan(ClubPlayerItem.class, scanExpression);
+        if(items.isEmpty()) {
+            return Optional.empty();
+        } else if(items.size()>1) {
+            throw new IllegalStateException("Multiple players found with monolith id: " + id);
+        }
+        return Optional.of(items.get(0).toPlayer());
     }
 }

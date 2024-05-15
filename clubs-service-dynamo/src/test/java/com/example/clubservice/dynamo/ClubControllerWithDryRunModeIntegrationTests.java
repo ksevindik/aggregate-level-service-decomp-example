@@ -153,28 +153,4 @@ public class ClubControllerWithDryRunModeIntegrationTests extends BaseOperationM
         Club clubFromDB = findById(testFixture.club3.getId()).orElseThrow();
         verifyClub(new Club(testFixture.club3.getId(), "FB", "TR", "AY"), clubFromDB);
     }
-
-    private Optional<Club> findById(Long id) {
-        ClubPlayerItem item = dynamoDBMapper.load(ClubPlayerItem.class, "CLUB#" + id, "CLUB#" + id);
-        if(item == null) {
-            return Optional.empty();
-        }
-        return Optional.of(item.toClub());
-    }
-
-    private Optional<Club> findByMonolithId(Long id) {
-        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
-        scanExpression.withFilterExpression("#monolithId = :val1 and begins_with(#sk, :skPrefix)")
-                .withExpressionAttributeValues(Map.of(
-                        ":val1", new AttributeValue().withN(id.toString()),
-                        ":skPrefix", new AttributeValue().withS("CLUB#")))
-                .withExpressionAttributeNames(Map.of("#sk", "SK", "#monolithId", "monolithId"));
-        List<ClubPlayerItem> items = dynamoDBMapper.scan(ClubPlayerItem.class, scanExpression);
-        if(items.isEmpty()) {
-            return Optional.empty();
-        } else if(items.size()>1) {
-            throw new IllegalStateException("Multiple clubs found with monolith id: " + id);
-        }
-        return Optional.of(items.get(0).toClub());
-    }
 }

@@ -117,12 +117,4 @@ public class ClubControllerWithReadWriteModeIntegrationTests extends BaseOperati
         verifyClub(new Club(testFixture.club1.getId(), "GS", "TRY", "AY"), clubFromDB);
         assertTrue(clubFromDB.isSynced());
     }
-
-    private Optional<Club> findById(Long id) {
-        ClubPlayerItem item = dynamoDBMapper.load(ClubPlayerItem.class, "CLUB#" + id, "CLUB#" + id);
-        if(item == null) {
-            return Optional.empty();
-        }
-        return Optional.of(item.toClub());
-    }
 }

@@ -36,6 +36,7 @@ public class EntityChangeEventPublisher {
          we should translate id of the entity to monolith id before publishing the event
          however, we need to create a copy of the entity in order to avoid any changes to the original entity
          */
+        club = new Club(club);
         ClubPlayerItem item = dynamoDBMapper.load(ClubPlayerItem.class, "CLUB#" + club.getId(), "CLUB#" + club.getId());
         Long monolithId = item.getMonolithId();
         if(monolithId != null) {
@@ -44,12 +45,13 @@ public class EntityChangeEventPublisher {
         this.publish(action, club, club.getId());
     }
 
-    public void publishPlayerEvent(ClubPlayerItem item, String action) {
+    public void publishPlayerEvent(Player player, String action) {
         /*
          we should translate id of the entity to monolith id before publishing the event
          however, we need to create a copy of the entity in order to avoid any changes to the original entity
          */
-        Player player = item.toPlayer();
+        player = new Player(player);
+        ClubPlayerItem item = dynamoDBMapper.load(ClubPlayerItem.class, "PLAYER#" + player.getId(), "PLAYER#" + player.getId());
         Long monolithId = item.getMonolithId();
         if(monolithId != null) {
             player.setId(monolithId);

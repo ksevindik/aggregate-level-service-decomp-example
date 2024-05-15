@@ -27,6 +27,8 @@ public class Club {
 
     public Club(Club club) {
         this(club.getId(), club.getName(), club.getCountry(), club.getPresident(), club.getCreated(), club.getModified());
+        this.setSynced(club.isSynced());
+        this.setMonolithId(club.getMonolithId());
     }
 
     public Club(String name, String country, String president) {

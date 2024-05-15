@@ -30,6 +30,8 @@ public class Player {
 
     public Player(Player player) {
         this(player.getId(), player.getName(), player.getCountry(), player.getRating(), player.getCreated(), player.getModified(), player.getClubId());
+        this.setSynced(player.isSynced());
+        this.setMonolithId(player.getMonolithId());
     }
 
     public Player(String name, String country, Integer rating, Long clubId) {

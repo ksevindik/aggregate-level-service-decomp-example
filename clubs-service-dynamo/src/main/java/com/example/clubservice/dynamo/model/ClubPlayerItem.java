@@ -180,6 +180,7 @@ public class ClubPlayerItem {
     public Club toClub() {
         Club club = new Club(id, name, country, president, created, modified);
         club.setSynced(isSynced());
+        club.setMonolithId(monolithId);
         return club;
     }
 
@@ -196,12 +197,14 @@ public class ClubPlayerItem {
         item.setPK("CLUB#" + club.getId());
         item.setSK("CLUB#" + club.getId());
         item.setSynced(club.isSynced());
+        item.setMonolithId(club.getMonolithId());
         return item;
     }
 
     public Player toPlayer() {
         Player player = new Player(id, name, country, rating, created, modified, clubId);
         player.setSynced(isSynced());
+        player.setMonolithId(monolithId);
         return player;
     }
 
@@ -235,6 +238,7 @@ public class ClubPlayerItem {
         item.setPK("PLAYER#" + player.getId());
         item.setSK("PLAYER#" + player.getId());
         item.setSynced(player.isSynced());
+        item.setMonolithId(player.getMonolithId());
         return item;
     }
 

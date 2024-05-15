@@ -31,12 +31,12 @@ public class EntityChangeEventPublisher {
     @Autowired
     private DynamoDBMapper dynamoDBMapper;
 
-    public void publishClubEvent(ClubPlayerItem item, String action) {
+    public void publishClubEvent(Club club, String action) {
         /*
          we should translate id of the entity to monolith id before publishing the event
          however, we need to create a copy of the entity in order to avoid any changes to the original entity
          */
-        Club club = item.toClub();
+        ClubPlayerItem item = dynamoDBMapper.load(ClubPlayerItem.class, "CLUB#" + club.getId(), "CLUB#" + club.getId());
         Long monolithId = item.getMonolithId();
         if(monolithId != null) {
             club.setId(monolithId);

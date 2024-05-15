@@ -1,7 +1,5 @@
 package com.example.clubservice.dynamo.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import java.sql.Timestamp;
 import java.util.Objects;
 
@@ -20,6 +18,8 @@ public class Club {
     private Timestamp modified;
 
     private boolean synced;
+
+    private Long monolithId;
 
 
     public Club() {
@@ -100,6 +100,14 @@ public class Club {
 
     public void setSynced(boolean synced) {
         this.synced = synced;
+    }
+
+    public Long getMonolithId() {
+        return monolithId;
+    }
+
+    public void setMonolithId(Long monolithId) {
+        this.monolithId = monolithId;
     }
 
     @Override

@@ -23,6 +23,8 @@ public class Player {
 
     private boolean synced;
 
+    private Long monolithId;
+
     public Player() {
     }
 
@@ -111,6 +113,14 @@ public class Player {
 
     public void setSynced(boolean synced) {
         this.synced = synced;
+    }
+
+    public Long getMonolithId() {
+        return monolithId;
+    }
+
+    public void setMonolithId(Long monolithId) {
+        this.monolithId = monolithId;
     }
 
     @Override

@@ -1,82 +1,53 @@
 package com.example.clubservice.dynamo.service;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedScanList;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.example.clubservice.dynamo.migration.EntityChangeEventPublisher;
 import com.example.clubservice.dynamo.model.Club;
-import com.example.clubservice.dynamo.model.ClubPlayerItem;
+import com.example.clubservice.dynamo.repository.ClubRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Service
 public class ClubService {
 
     @Autowired
-    private DynamoDBMapper dynamoDBMapper;
+    private ClubRepository clubRepository;
 
     @Autowired
     private EntityChangeEventPublisher entityChangeEventPublisher;
 
 
     public List<Club> getAllClubs() {
-        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression()
-                .withFilterExpression("begins_with(#sk, :prefix)")
-                .withExpressionAttributeValues(Map.of(":prefix", new AttributeValue().withS("CLUB")))
-                .withExpressionAttributeNames(Map.of("#sk", "SK"));
-        return retrieveClubsWithScanning(scanExpression);
+        return clubRepository.findAll();
     }
 
     public List<Club> getClubsByCountry(String country) {
-        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression()
-                .withFilterExpression("country = :value")
-                .withExpressionAttributeValues(Map.of(":value", new AttributeValue().withS(country)));
-        return retrieveClubsWithScanning(scanExpression);
+        return clubRepository.findByCountry(country);
     }
 
     public Optional<Club> getClubById(Long id) {
-        ClubPlayerItem clubPlayerItem = dynamoDBMapper.load(ClubPlayerItem.class, "CLUB#" + id, "CLUB#" + id);
-        if (clubPlayerItem != null) {
-            return Optional.of(clubPlayerItem.toClub());
-        } else {
-            return Optional.empty();
-        }
+        return clubRepository.findById(id);
     }
 
     public List<Club> getClubsByNamePattern(String namePattern) {
-        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
-        return retrieveClubsWithScanning(scanExpression).stream().filter(club -> club.getName().contains(namePattern)).toList();
+        return clubRepository.findByNamePattern(namePattern);
     }
 
     public Club createClub(Club club) {
         club.setId(System.currentTimeMillis());
-        ClubPlayerItem clubPlayerItem = ClubPlayerItem.fromClub(club);
-        clubPlayerItem.setSynced(true);
-        dynamoDBMapper.save(clubPlayerItem);
-        entityChangeEventPublisher.publishClubEvent(clubPlayerItem, "CREATE");
+        club.setSynced(true);
+        clubRepository.save(club);
+        entityChangeEventPublisher.publishClubEvent(club, "CREATE");
         return club;
     }
 
     public Club updatePresident(Long clubId, String president) {
-        ClubPlayerItem clubPlayerItem = dynamoDBMapper.load(ClubPlayerItem.class, "CLUB#" + clubId, "CLUB#" + clubId);
-        if (clubPlayerItem != null) {
-            clubPlayerItem.setPresident(president);
-            dynamoDBMapper.save(clubPlayerItem);
-            Club club = clubPlayerItem.toClub();
-            entityChangeEventPublisher.publishClubEvent(clubPlayerItem, "UPDATE");
-            return club;
-        } else {
-            throw new RuntimeException("Club not found with id :" + clubId);
-        }
-    }
-
-    private List<Club> retrieveClubsWithScanning(DynamoDBScanExpression scanExpression) {
-        PaginatedScanList<ClubPlayerItem> items = dynamoDBMapper.scan(ClubPlayerItem.class, scanExpression);
-        return items.stream().map(ClubPlayerItem::toClub).toList();
+        Club club = clubRepository.findById(clubId).orElseThrow(()-> new RuntimeException("Club not found with id :" + clubId));
+        club.setPresident(president);
+        clubRepository.save(club);
+        entityChangeEventPublisher.publishClubEvent(club, "UPDATE");
+        return club;
     }
 }

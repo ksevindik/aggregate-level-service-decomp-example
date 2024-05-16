@@ -47,6 +47,20 @@ public class ClubRepository {
         return retrieveClubsWithScanning(scanExpression).stream().filter(club -> club.getName().contains(namePattern)).toList();
     }
 
+    public Optional<Club> findByMonolithId(Long monolithId) {
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression()
+                .withFilterExpression("monolithId = :monolithId and begins_with(SK, :skPrefix)")
+                .withExpressionAttributeValues(Map.of(
+                        ":monolithId", new AttributeValue().withN(monolithId.toString()),
+                        ":skPrefix", new AttributeValue().withS("CLUB#")));
+        List<Club> clubs = retrieveClubsWithScanning(scanExpression);
+        if (clubs.isEmpty()) {
+            return Optional.empty();
+        } else {
+            return Optional.of(clubs.get(0));
+        }
+    }
+
     public void save(Club club) {
         ClubPlayerItem clubPlayerItem = ClubPlayerItem.fromClub(club);
         dynamoDBMapper.save(clubPlayerItem);

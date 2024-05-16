@@ -1,19 +1,14 @@
 package com.example.clubservice.dynamo.migration;
-
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedScanList;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.example.clubservice.dynamo.model.Club;
-import com.example.clubservice.dynamo.model.ClubPlayerItem;
 import com.example.clubservice.dynamo.model.Player;
+import com.example.clubservice.dynamo.repository.ClubRepository;
+import com.example.clubservice.dynamo.repository.PlayerRepository;
 import com.example.clubservice.dynamo.service.ClubService;
 import com.example.clubservice.dynamo.service.PlayerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 /*
@@ -39,27 +34,10 @@ public class ReadWriteApiDispatcher {
     private OperationModeManager operationModeManager;
 
     @Autowired
-    private DynamoDBMapper dynamoDBMapper;
+    private ClubRepository clubRepository;
 
-    private Long resolveServiceClubId(Long clubId) {
-        PaginatedScanList<ClubPlayerItem> items = dynamoDBMapper.scan(ClubPlayerItem.class, new DynamoDBScanExpression()
-                .withFilterExpression("monolithId = :monolithId and begins_with(SK, :skPrefix)")
-                .withExpressionAttributeValues(Map.of(
-                        ":monolithId", new AttributeValue().withN(clubId.toString()),
-                        ":skPrefix", new AttributeValue().withS("CLUB#")))
-        );
-        return items.isEmpty() ? clubId: items.get(0).getId();
-    }
-
-    private Long resolveServicePlayerId(Long playerId) {
-        PaginatedScanList<ClubPlayerItem> items = dynamoDBMapper.scan(ClubPlayerItem.class, new DynamoDBScanExpression()
-                .withFilterExpression("monolithId = :monolithId and begins_with(SK, :skPrefix)")
-                .withExpressionAttributeValues(Map.of(
-                        ":monolithId", new AttributeValue().withN(playerId.toString()),
-                        ":skPrefix", new AttributeValue().withS("PLAYER#")))
-        );
-        return items.isEmpty() ? playerId: items.get(0).getId();
-    }
+    @Autowired
+    private PlayerRepository playerRepository;
 
     //club related operations
 
@@ -95,24 +73,14 @@ public class ReadWriteApiDispatcher {
                 () -> monolithReadWriteApiAdapter.getClubsByNamePattern(namePattern));
     }
 
-    private Club convertToMonolithIds(Club club) {
-        if(club == null) return null;
-        Long clubId = dynamoDBMapper.load(ClubPlayerItem.class,
-                "CLUB#" + club.getId(), "CLUB#" + club.getId()).getMonolithId();
-        club.setId(clubId);
-        return club;
-    }
-
     public Club createClub(Club club) {
         return executeCommand(
                 () -> monolithReadWriteApiAdapter.createClub(club),
                 () -> clubService.createClub(club),
                 () -> {
                     Club monolithSavedClub = monolithReadWriteApiAdapter.createClub(club);
-                    Club serviceSavedClub = clubService.createClub(club);
-                    ClubPlayerItem item = ClubPlayerItem.fromClub(serviceSavedClub);
-                    item.setMonolithId(monolithSavedClub.getId());
-                    dynamoDBMapper.save(item);
+                    club.setMonolithId(monolithSavedClub.getId());
+                    clubService.createClub(club);
                     return monolithSavedClub;
                 });
     }
@@ -173,21 +141,6 @@ public class ReadWriteApiDispatcher {
                 () -> monolithReadWriteApiAdapter.getPlayersByNamePattern(name));
     }
 
-    private Player convertToMonolithIds(Player player) {
-        if(player == null) return null;
-        ClubPlayerItem playerItem = dynamoDBMapper.load(ClubPlayerItem.class,
-                "PLAYER#" + player.getId(), "PLAYER#" + player.getId());
-        Long playerId = playerItem.getMonolithId();
-        player.setId(playerId);
-        Long clubId = playerItem.getClubId();
-        if(clubId != null) {
-            Long monolithClubId = dynamoDBMapper.load(ClubPlayerItem.class,
-                    "CLUB#" + clubId, "CLUB#" + clubId).getMonolithId();
-            player.setClubId(monolithClubId);
-        }
-        return player;
-    }
-
     public Player createPlayer(Player player) {
         return executeCommand(
                 () -> monolithReadWriteApiAdapter.createPlayer(player),
@@ -198,10 +151,8 @@ public class ReadWriteApiDispatcher {
                         Long serviceClubId = resolveServiceClubId(monolithSavedPlayer.getClubId());
                         player.setClubId(serviceClubId);
                     }
-                    Player serviceSavedPlayer = playerService.createPlayer(player);
-                    ClubPlayerItem playerItem = ClubPlayerItem.fromPlayer(serviceSavedPlayer);
-                    playerItem.setMonolithId(monolithSavedPlayer.getId());
-                    dynamoDBMapper.save(playerItem);
+                    player.setMonolithId(monolithSavedPlayer.getId());
+                    playerService.createPlayer(player);
                     return monolithSavedPlayer;
                 });
     }
@@ -250,5 +201,34 @@ public class ReadWriteApiDispatcher {
                 throw new IllegalStateException(
                         "Unknown operation mode: " + operationModeManager.getOperationMode());
         }
+    }
+
+    private Long resolveServiceClubId(Long clubId) {
+        Optional<Club> club = clubRepository.findByMonolithId(clubId);
+        return club.isEmpty() ? clubId: club.get().getId();
+    }
+
+    private Long resolveServicePlayerId(Long playerId) {
+        Optional<Player> player = playerRepository.findByMonolithId(playerId);
+        return player.isEmpty() ? playerId: player.get().getId();
+    }
+
+    private Club convertToMonolithIds(Club club) {
+        if(club == null) return null;
+        Club monolithClub = new Club(club);
+        monolithClub.setId(club.getMonolithId());
+        monolithClub.setMonolithId(null);
+        return monolithClub;
+    }
+
+    private Player convertToMonolithIds(Player player) {
+        if(player == null) return null;
+        Player monolithPlayer = new Player(player);
+        monolithPlayer.setId(player.getMonolithId());
+        monolithPlayer.setMonolithId(null);
+        if(player.getClubId() != null) {
+            monolithPlayer.setClubId(clubRepository.findById(player.getClubId()).map(Club::getMonolithId).orElse(null));
+        }
+        return monolithPlayer;
     }
 }

@@ -70,6 +70,20 @@ public class PlayerRepository {
         return retrievePlayersWithScanning(scanExpression);
     }
 
+    public Optional<Player> findByMonolithId(Long monolithId) {
+        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression()
+                .withFilterExpression("monolithId = :monolithId and begins_with(SK, :skPrefix)")
+                .withExpressionAttributeValues(Map.of(
+                        ":monolithId", new AttributeValue().withN(monolithId.toString()),
+                        ":skPrefix", new AttributeValue().withS("PLAYER#")));
+        List<Player> players = retrievePlayersWithScanning(scanExpression);
+        if (players.isEmpty()) {
+            return Optional.empty();
+        } else {
+            return Optional.of(players.get(0));
+        }
+    }
+
     public void save(Player player) {
         ClubPlayerItem playerItem = ClubPlayerItem.fromPlayer(player);
         dynamoDBMapper.save(playerItem);

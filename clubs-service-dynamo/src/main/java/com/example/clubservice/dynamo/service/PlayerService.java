@@ -40,7 +40,7 @@ public class PlayerService {
 
 
     public Optional<Player> getPlayerById(Long id) {
-        return playerRepository.findrById(id);
+        return playerRepository.findById(id);
     }
 
 
@@ -58,7 +58,7 @@ public class PlayerService {
 
 
     public Player updatePlayerRating(Long playerId, Integer rating) {
-        Player player = playerRepository.findrById(playerId).orElseThrow(() -> new RuntimeException("Player not found with id :" + playerId));
+        Player player = playerRepository.findById(playerId).orElseThrow(() -> new RuntimeException("Player not found with id :" + playerId));
         player.setRating(rating);
         playerRepository.save(player);
         entityChangeEventPublisher.publishPlayerEvent(player, "UPDATE");
@@ -67,7 +67,7 @@ public class PlayerService {
 
 
     public Player transferPlayer(Long playerId, Long clubId) {
-        Player player = playerRepository.findrById(playerId).orElseThrow(() -> new RuntimeException("Player not found with id :" + playerId));
+        Player player = playerRepository.findById(playerId).orElseThrow(() -> new RuntimeException("Player not found with id :" + playerId));
         Club club = clubRepository.findById(clubId).orElseThrow(() -> new RuntimeException("Club not found with id :" + clubId));
         player.setClubId(club.getId());
         playerRepository.save(player);

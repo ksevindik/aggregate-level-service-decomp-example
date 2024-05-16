@@ -1,9 +1,8 @@
 package com.example.clubservice.dynamo.migration;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.example.clubservice.dynamo.model.Club;
-import com.example.clubservice.dynamo.model.ClubPlayerItem;
 import com.example.clubservice.dynamo.model.Player;
+import com.example.clubservice.dynamo.repository.ClubRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -29,7 +28,7 @@ public class EntityChangeEventPublisher {
     private MigrationProperties migrationProperties;
 
     @Autowired
-    private DynamoDBMapper dynamoDBMapper;
+    private ClubRepository clubRepository;
 
     public void publishClubEvent(Club club, String action) {
         /*
@@ -37,10 +36,8 @@ public class EntityChangeEventPublisher {
          however, we need to create a copy of the entity in order to avoid any changes to the original entity
          */
         club = new Club(club);
-        ClubPlayerItem item = dynamoDBMapper.load(ClubPlayerItem.class, "CLUB#" + club.getId(), "CLUB#" + club.getId());
-        Long monolithId = item.getMonolithId();
-        if(monolithId != null) {
-            club.setId(monolithId);
+        if(!action.equals("CREATE")) {
+            club.setId(club.getMonolithId());
         }
         this.publish(action, club, club.getId());
     }
@@ -51,17 +48,17 @@ public class EntityChangeEventPublisher {
          however, we need to create a copy of the entity in order to avoid any changes to the original entity
          */
         player = new Player(player);
-        ClubPlayerItem item = dynamoDBMapper.load(ClubPlayerItem.class, "PLAYER#" + player.getId(), "PLAYER#" + player.getId());
-        Long monolithId = item.getMonolithId();
-        if(monolithId != null) {
-            player.setId(monolithId);
+        if(!action.equals("CREATE")) {
+            player.setId(player.getMonolithId());
         }
-        if(player.getClubId() != null) {
-            ClubPlayerItem clubItem = dynamoDBMapper.load(ClubPlayerItem.class,
-                    "CLUB#" + player.getClubId(), "CLUB#" + player.getClubId());
-            player.setClubId(clubItem.getMonolithId());
+        Long clubId = player.getClubId();
+        if(clubId != null) {
+            Club club = clubRepository.findById(clubId).orElseThrow(() ->
+                    new RuntimeException("Club not found with id: " + clubId));
+            Long clubMonolithId = club.getMonolithId();
+            player.setClubId(clubMonolithId!=null?clubMonolithId:clubId);
         }
-        this.publish(action, player, player.getClubId()!=null ? player.getClubId() : player.getId());
+        this.publish(action, player, clubId!=null ? clubId : player.getId());
     }
 
     private void publish(String action, Object entity, Long key) {

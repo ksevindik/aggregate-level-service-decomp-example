@@ -1,19 +1,16 @@
 package com.example.clubservice.dynamo.migration;
 
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedScanList;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.example.clubservice.dynamo.model.Club;
-import com.example.clubservice.dynamo.model.ClubPlayerItem;
 import com.example.clubservice.dynamo.model.Player;
+import com.example.clubservice.dynamo.repository.ClubRepository;
+import com.example.clubservice.dynamo.repository.PlayerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
+import java.util.Optional;
 
 /*
 the job of entity persister is to reflect changes received as entity change events sent from the monolith side to the
@@ -30,44 +27,33 @@ public class EntityPersister {
     private ApplicationEventPublisher applicationEventPublisher;
 
     @Autowired
-    private DynamoDBMapper dynamoDBMapper;
+    private ClubRepository clubRepository;
+
+    @Autowired
+    private PlayerRepository playerRepository;
 
     public Club createFrom(Club monolithClub) {
         Club serviceClub = new Club();
         applyChanges(monolithClub, serviceClub);
         serviceClub.setId(System.currentTimeMillis());
-        ClubPlayerItem clubPlayerItem = ClubPlayerItem.fromClub(serviceClub);
-        clubPlayerItem.setMonolithId(monolithClub.getId());
-        dynamoDBMapper.save(clubPlayerItem);
+        clubRepository.save(serviceClub);
         applicationEventPublisher.publishEvent(new EntityPersistedEvent(this, serviceClub));
         return serviceClub;
     }
 
     private Club findClubById(Long id) {
-        ClubPlayerItem item = dynamoDBMapper.load(ClubPlayerItem.class, "CLUB#" + id, "CLUB#" + id);
-        if(item == null) {
-            throw new RuntimeException("Club not found with id: " + id);
-        }
-        return item.toClub();
+        return clubRepository.findById(id).orElseThrow(() -> new RuntimeException("Club not found with id: " + id));
     }
 
     private Player findPlayerById(Long id) {
-        PaginatedScanList<ClubPlayerItem> items = dynamoDBMapper.scan(ClubPlayerItem.class, new DynamoDBScanExpression()
-                .withFilterExpression("SK = :skValue")
-                .withExpressionAttributeValues(Map.of(
-                        ":skValue", new AttributeValue().withS("PLAYER#"+id)))
-        );
-        if(items.isEmpty()) {
-            throw new RuntimeException("Player not found with id: " + id);
-        }
-        return items.get(0).toPlayer();
+        return playerRepository.findById(id).orElseThrow(() -> new RuntimeException("Player not found with id: " + id));
     }
 
     public Club updateFrom(Club monolithClub) {
         Long serviceClubId = resolveServiceClubId(monolithClub.getId());
         Club serviceClub = findClubById(serviceClubId);
         applyChanges(monolithClub, serviceClub);
-        dynamoDBMapper.save(ClubPlayerItem.fromClub(serviceClub));
+        clubRepository.save(serviceClub);
         applicationEventPublisher.publishEvent(new EntityPersistedEvent(this, serviceClub));
         return serviceClub;
     }
@@ -75,17 +61,14 @@ public class EntityPersister {
     public void deleteFrom(Club monolithClub) {
         Long serviceClubId = resolveServiceClubId(monolithClub.getId());
         Club club = findClubById(serviceClubId);
-        dynamoDBMapper.delete(ClubPlayerItem.fromClub(club));
+        clubRepository.delete(club);
         applicationEventPublisher.publishEvent(new EntityPersistedEvent(this, club));
     }
 
     public Player createFrom(Player monolithPlayer) {
         Player servicePlayer = new Player();
         applyChanges(monolithPlayer, servicePlayer);
-        servicePlayer.setId(System.currentTimeMillis());
-        ClubPlayerItem clubPlayerItem = ClubPlayerItem.fromPlayer(servicePlayer);
-        clubPlayerItem.setMonolithId(monolithPlayer.getId());
-        dynamoDBMapper.save(clubPlayerItem);
+        playerRepository.save(servicePlayer);
         applicationEventPublisher.publishEvent(new EntityPersistedEvent(this, servicePlayer));
         return servicePlayer;
     }
@@ -94,7 +77,7 @@ public class EntityPersister {
         Long servicePlayerId = resolveServicePlayerId(monolithPlayer.getId());
         Player servicePlayer = findPlayerById(servicePlayerId);
         applyChanges(monolithPlayer, servicePlayer);
-        dynamoDBMapper.save(ClubPlayerItem.fromPlayer(servicePlayer));
+        playerRepository.save(servicePlayer);
         applicationEventPublisher.publishEvent(new EntityPersistedEvent(this, servicePlayer));
         return servicePlayer;
     }
@@ -102,42 +85,40 @@ public class EntityPersister {
     public void deleteFrom(Player monolithPlayer) {
         Long servicePlayerId = resolveServicePlayerId(monolithPlayer.getId());
         Player player = findPlayerById(servicePlayerId);
-        dynamoDBMapper.delete(ClubPlayerItem.fromPlayer(player));
+        playerRepository.delete(player);
         applicationEventPublisher.publishEvent(new EntityPersistedEvent(this, servicePlayerId));
     }
 
     public void syncClubEntityIfNecessary(Long clubId) {
-        ClubPlayerItem item = dynamoDBMapper.load(ClubPlayerItem.class, "CLUB#" + clubId, "CLUB#" + clubId);
-        if(item != null && item.isSynced()) return;
-        if(item == null) {
-            Club club = monolithReadWriteApiAdapter.getClubById(clubId);
-            item = ClubPlayerItem.fromClub(club);
-        } else if(!item.isSynced()) {
-            Long monolithClubId = item.getMonolithId();
-            Club club = monolithReadWriteApiAdapter.getClubById(monolithClubId);
-            item.applyChanges(club);
+        Club club = clubRepository.findById(clubId).orElse(null);
+        if(club != null && club.isSynced()) return;
+        if(club == null) {
+            Club monolithClub = monolithReadWriteApiAdapter.getClubById(clubId);
+            club = new Club(monolithClub);
+            club.setId(System.currentTimeMillis());
+        } else if(!club.isSynced()) {
+            Long monolithClubId = club.getMonolithId();
+            Club monolithClub = monolithReadWriteApiAdapter.getClubById(monolithClubId);
+            applyChanges(monolithClub, club);
         }
-        item.setSynced(true);
-        dynamoDBMapper.save(item);
+        club.setSynced(true);
+        clubRepository.save(club);
     }
 
     public void syncPlayerEntityIfNecessary(Long playerId) {
-        ClubPlayerItem item = dynamoDBMapper.load(ClubPlayerItem.class, "PLAYER#" + playerId, "PLAYER#" + playerId);
-        if(item != null && item.isSynced()) return;
-        if(item == null) {
-            Player player = monolithReadWriteApiAdapter.getPlayerById(playerId);
-            item = ClubPlayerItem.fromPlayer(player);
-        } else if(!item.isSynced()) {
-            Long monolithPlayerId = item.getMonolithId();
-            Player player = monolithReadWriteApiAdapter.getPlayerById(monolithPlayerId);
-            if(player.getClubId() != null) {
-                Long clubId = resolveServiceClubId(player.getClubId());
-                player.setClubId(clubId);
-            }
-            item.applyChanges(player);
+        Player player = playerRepository.findById(playerId).orElse(null);
+        if(player != null && player.isSynced()) return;
+        if(player == null) {
+            Player monolithPlayer = monolithReadWriteApiAdapter.getPlayerById(playerId);
+            player = new Player(monolithPlayer);
+            player.setId(System.currentTimeMillis());
+        } else if(!player.isSynced()) {
+            Long monolithPlayerId = player.getMonolithId();
+            Player monolithPlayer = monolithReadWriteApiAdapter.getPlayerById(monolithPlayerId);
+            applyChanges(monolithPlayer, player);
         }
-        item.setSynced(true);
-        dynamoDBMapper.save(item);
+        player.setSynced(true);
+        playerRepository.save(player);
     }
 
 
@@ -147,6 +128,7 @@ public class EntityPersister {
         serviceClub.setPresident(monolithClub.getPresident());
         serviceClub.setCreated(monolithClub.getCreated());
         serviceClub.setModified(monolithClub.getModified());
+        serviceClub.setMonolithId(monolithClub.getId());
     }
 
     private void applyChanges(Player monolithPlayer, Player servicePlayer) {
@@ -159,25 +141,16 @@ public class EntityPersister {
             Long serviceClubId = resolveServiceClubId(monolithPlayer.getClubId());
             servicePlayer.setClubId(serviceClubId);
         }
+        servicePlayer.setMonolithId(monolithPlayer.getId());
     }
 
     private Long resolveServiceClubId(Long clubId) {
-        PaginatedScanList<ClubPlayerItem> items = dynamoDBMapper.scan(ClubPlayerItem.class, new DynamoDBScanExpression()
-                .withFilterExpression("monolithId = :monolithId and begins_with(SK, :skPrefix)")
-                .withExpressionAttributeValues(Map.of(
-                        ":monolithId", new AttributeValue().withN(clubId.toString()),
-                        ":skPrefix", new AttributeValue().withS("CLUB#")))
-        );
-        return items.isEmpty() ? clubId: items.get(0).getId();
+        Optional<Club> club = clubRepository.findByMonolithId(clubId);
+        return club.map(Club::getId).orElse(clubId);
     }
 
     private Long resolveServicePlayerId(Long playerId) {
-        PaginatedScanList<ClubPlayerItem> items = dynamoDBMapper.scan(ClubPlayerItem.class, new DynamoDBScanExpression()
-                .withFilterExpression("monolithId = :monolithId and begins_with(SK, :skPrefix)")
-                .withExpressionAttributeValues(Map.of(
-                        ":monolithId", new AttributeValue().withN(playerId.toString()),
-                        ":skPrefix", new AttributeValue().withS("PLAYER#")))
-        );
-        return items.isEmpty() ? playerId: items.get(0).getId();
+        Optional<Player> player = playerRepository.findByMonolithId(playerId);
+        return player.map(Player::getId).orElse(playerId);
     }
 }

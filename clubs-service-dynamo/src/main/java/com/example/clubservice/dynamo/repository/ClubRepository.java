@@ -66,6 +66,11 @@ public class ClubRepository {
         dynamoDBMapper.save(clubPlayerItem);
     }
 
+    public void delete(Club club) {
+        ClubPlayerItem clubPlayerItem = ClubPlayerItem.fromClub(club);
+        dynamoDBMapper.delete(clubPlayerItem);
+    }
+
     private List<Club> retrieveClubsWithScanning(DynamoDBScanExpression scanExpression) {
         PaginatedScanList<ClubPlayerItem> items = dynamoDBMapper.scan(ClubPlayerItem.class, scanExpression);
         return items.stream().map(ClubPlayerItem::toClub).toList();

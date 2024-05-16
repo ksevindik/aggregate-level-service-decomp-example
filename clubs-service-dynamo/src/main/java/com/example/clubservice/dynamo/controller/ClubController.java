@@ -2,7 +2,6 @@ package com.example.clubservice.dynamo.controller;
 
 import com.example.clubservice.dynamo.migration.ReadWriteApiDispatcher;
 import com.example.clubservice.dynamo.model.Club;
-import com.example.clubservice.dynamo.service.ClubService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -55,7 +55,7 @@ public class PlayerRepository {
         return retrievePlayersWithScanning(scanExpression);
     }
 
-    public Optional<Player> findrById(Long id) {
+    public Optional<Player> findById(Long id) {
         ClubPlayerItem playerItem = dynamoDBMapper.load(ClubPlayerItem.class, "PLAYER#" + id, "PLAYER#" + id);
         return Optional.ofNullable(playerItem).map(ClubPlayerItem::toPlayer);
     }
@@ -87,6 +87,11 @@ public class PlayerRepository {
     public void save(Player player) {
         ClubPlayerItem playerItem = ClubPlayerItem.fromPlayer(player);
         dynamoDBMapper.save(playerItem);
+    }
+
+    public void delete(Player player) {
+        ClubPlayerItem playerItem = ClubPlayerItem.fromPlayer(player);
+        dynamoDBMapper.delete(playerItem);
     }
 
     private List<Player> retrievePlayersWithScanning(DynamoDBScanExpression scanExpression) {
